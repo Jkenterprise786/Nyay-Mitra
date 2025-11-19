@@ -1,0 +1,100 @@
+{
+  "name": "LocalOffice",
+  "type": "object",
+  "properties": {
+    "office_name": {
+      "type": "string",
+      "description": "Office name"
+    },
+    "office_type": {
+      "type": "string",
+      "enum": [
+        "Aadhaar Kendra",
+        "RTO",
+        "Police Station",
+        "Post Office",
+        "Municipal Office",
+        "Tehsil Office",
+        "Court",
+        "Bank",
+        "Electricity Office",
+        "Water Department",
+        "Other"
+      ],
+      "description": "Type of office"
+    },
+    "address": {
+      "type": "string",
+      "description": "Complete address"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "pincode": {
+      "type": "string",
+      "description": "Pincode"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "timings": {
+      "type": "string",
+      "description": "Office timings"
+    },
+    "services_offered": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Services provided"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "GPS latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "GPS longitude"
+    },
+    "google_maps_url": {
+      "type": "string",
+      "description": "Google Maps link"
+    }
+  },
+  "required": [
+    "office_name",
+    "office_type",
+    "address",
+    "city",
+    "state",
+    "pincode"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

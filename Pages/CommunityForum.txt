@@ -1,0 +1,446 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { MessageSquare, ThumbsUp, ThumbsDown, Search, Plus, Eye, MessageCircle, TrendingUp, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+
+export default function CommunityForum() {
+  const [user, setUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showAskDialog, setShowAskDialog] = useState(false);
+  const [newQuestion, setNewQuestion] = useState({
+    title: "",
+    content: "",
+    category: "Other",
+    tags: ""
+  });
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [answer, setAnswer] = useState("");
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.log("User not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: questions, isLoading } = useQuery({
+    queryKey: ['forum-questions'],
+    queryFn: () => base44.entities.ForumQuestion.list('-created_date'),
+    initialData: []
+  });
+
+  const { data: answers } = useQuery({
+    queryKey: ['forum-answers', selectedQuestion?.id],
+    queryFn: () => base44.entities.ForumAnswer.filter({ question_id: selectedQuestion.id }, '-created_date'),
+    initialData: [],
+    enabled: !!selectedQuestion
+  });
+
+  const askQuestionMutation = useMutation({
+    mutationFn: (data) => base44.entities.ForumQuestion.create({
+      ...data,
+      user_id: user.id,
+      tags: data.tags.split(',').map(t => t.trim()).filter(Boolean)
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['forum-questions']);
+      setShowAskDialog(false);
+      setNewQuestion({ title: "", content: "", category: "Other", tags: "" });
+      toast.success("Question posted!");
+    }
+  });
+
+  const postAnswerMutation = useMutation({
+    mutationFn: (content) => base44.entities.ForumAnswer.create({
+      question_id: selectedQuestion.id,
+      user_id: user.id,
+      content
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['forum-answers']);
+      base44.entities.ForumQuestion.update(selectedQuestion.id, {
+        answer_count: (selectedQuestion.answer_count || 0) + 1
+      });
+      setAnswer("");
+      toast.success("Answer posted!");
+    }
+  });
+
+  const voteQuestionMutation = useMutation({
+    mutationFn: ({ id, type }) => {
+      const current = questions.find(q => q.id === id);
+      return base44.entities.ForumQuestion.update(id, {
+        upvotes: type === 'up' ? (current.upvotes || 0) + 1 : current.upvotes,
+        downvotes: type === 'down' ? (current.downvotes || 0) + 1 : current.downvotes
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries(['forum-questions'])
+  });
+
+  const voteAnswerMutation = useMutation({
+    mutationFn: ({ id, type }) => {
+      const current = answers.find(a => a.id === id);
+      return base44.entities.ForumAnswer.update(id, {
+        upvotes: type === 'up' ? (current.upvotes || 0) + 1 : current.upvotes,
+        downvotes: type === 'down' ? (current.downvotes || 0) + 1 : current.downvotes
+      });
+    },
+    onSuccess: () => queryClient.invalidateQueries(['forum-answers'])
+  });
+
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         q.content?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || q.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = [
+    "Family Law",
+    "Property Law",
+    "Consumer Rights",
+    "Criminal Law",
+    "Employment Law",
+    "Tax & Finance",
+    "Government Schemes",
+    "Documents & Certificates",
+    "Other"
+  ];
+
+  const handleAskQuestion = () => {
+    if (!user) {
+      toast.error("Please login to ask questions");
+      base44.auth.redirectToLogin();
+      return;
+    }
+
+    if (!newQuestion.title || !newQuestion.content) {
+      toast.error("Please fill required fields");
+      return;
+    }
+
+    askQuestionMutation.mutate(newQuestion);
+  };
+
+  const handlePostAnswer = () => {
+    if (!user) {
+      toast.error("Please login to answer");
+      base44.auth.redirectToLogin();
+      return;
+    }
+
+    if (!answer.trim()) {
+      toast.error("Please write an answer");
+      return;
+    }
+
+    postAnswerMutation.mutate(answer);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              {/* Forum SVG Logo */}
+              <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="forumGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{stopColor: '#A855F7', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: '#EC4899', stopOpacity: 1}} />
+                  </linearGradient>
+                </defs>
+                <circle cx="35" cy="35" r="18" fill="url(#forumGradient)" opacity="0.8"/>
+                <circle cx="65" cy="35" r="18" fill="url(#forumGradient)" opacity="0.6"/>
+                <circle cx="50" cy="60" r="18" fill="url(#forumGradient)"/>
+                <circle cx="35" cy="35" r="8" fill="white"/>
+                <circle cx="65" cy="35" r="8" fill="white"/>
+                <circle cx="50" cy="60" r="8" fill="white"/>
+                <path d="M 25 50 Q 25 45, 30 45" stroke="white" strokeWidth="2" fill="none"/>
+                <path d="M 75 50 Q 75 45, 70 45" stroke="white" strokeWidth="2" fill="none"/>
+              </svg>
+              <div>
+                <h1 className="text-3xl font-bold flex items-center gap-2">
+                  <MessageSquare className="w-8 h-8" />
+                  Community Q&A Forum
+                </h1>
+                <p className="text-purple-100 mt-1">💬 Ask, answer & connect with {questions.length}+ legal questions</p>
+              </div>
+            </div>
+            <Dialog open={showAskDialog} onOpenChange={setShowAskDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-white text-purple-600 hover:bg-purple-50">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Ask Question
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ask a Question</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <Label>Title *</Label>
+                    <Input
+                      value={newQuestion.title}
+                      onChange={(e) => setNewQuestion({...newQuestion, title: e.target.value})}
+                      placeholder="What's your question?"
+                    />
+                  </div>
+                  <div>
+                    <Label>Category *</Label>
+                    <Select value={newQuestion.category} onValueChange={(v) => setNewQuestion({...newQuestion, category: v})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Details *</Label>
+                    <Textarea
+                      value={newQuestion.content}
+                      onChange={(e) => setNewQuestion({...newQuestion, content: e.target.value})}
+                      placeholder="Describe your question in detail..."
+                      rows={5}
+                    />
+                  </div>
+                  <div>
+                    <Label>Tags (comma-separated)</Label>
+                    <Input
+                      value={newQuestion.tags}
+                      onChange={(e) => setNewQuestion({...newQuestion, tags: e.target.value})}
+                      placeholder="e.g., divorce, property, tenant"
+                    />
+                  </div>
+                  <Button onClick={handleAskQuestion} className="w-full bg-purple-600 hover:bg-purple-700">
+                    Post Question
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Search Questions</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Search questions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {selectedQuestion ? (
+          <div className="space-y-6">
+            <Button variant="outline" onClick={() => setSelectedQuestion(null)}>
+              ← Back to Questions
+            </Button>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl mb-2">{selectedQuestion.title}</CardTitle>
+                    <div className="flex gap-2 mb-3">
+                      <Badge>{selectedQuestion.category}</Badge>
+                      {selectedQuestion.status === "Answered" && (
+                        <Badge className="bg-green-100 text-green-800">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Answered
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => voteQuestionMutation.mutate({ id: selectedQuestion.id, type: 'up' })}
+                    >
+                      <ThumbsUp className="w-5 h-5" />
+                    </Button>
+                    <span className="font-bold text-lg">{(selectedQuestion.upvotes || 0) - (selectedQuestion.downvotes || 0)}</span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => voteQuestionMutation.mutate({ id: selectedQuestion.id, type: 'down' })}
+                    >
+                      <ThumbsDown className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 whitespace-pre-wrap">{selectedQuestion.content}</p>
+                <div className="mt-4 pt-4 border-t flex items-center gap-4 text-sm text-gray-500">
+                  <span>{selectedQuestion.views || 0} views</span>
+                  <span>{selectedQuestion.answer_count || 0} answers</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{answers.length} Answers</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {answers.map(ans => (
+                  <div key={ans.id} className="border-b pb-4 last:border-0">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => voteAnswerMutation.mutate({ id: ans.id, type: 'up' })}
+                        >
+                          <ThumbsUp className="w-4 h-4" />
+                        </Button>
+                        <span className="font-semibold">{(ans.upvotes || 0) - (ans.downvotes || 0)}</span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => voteAnswerMutation.mutate({ id: ans.id, type: 'down' })}
+                        >
+                          <ThumbsDown className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 whitespace-pre-wrap">{ans.content}</p>
+                        {ans.is_verified_lawyer && (
+                          <Badge className="mt-2 bg-blue-100 text-blue-800">
+                            ✓ Verified Lawyer
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="pt-4 border-t">
+                  <Label>Your Answer</Label>
+                  <Textarea
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Share your knowledge..."
+                    rows={5}
+                    className="mt-2"
+                  />
+                  <Button onClick={handlePostAnswer} className="mt-3 bg-purple-600 hover:bg-purple-700">
+                    Post Answer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-20 bg-gray-200 rounded" />
+                  </CardContent>
+                </Card>
+              ))
+            ) : filteredQuestions.length > 0 ? (
+              filteredQuestions.map(q => (
+                <Card key={q.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedQuestion(q)}>
+                  <CardContent className="p-6">
+                    <div className="flex gap-4">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{(q.upvotes || 0) - (q.downvotes || 0)}</div>
+                          <div className="text-xs text-gray-500">votes</div>
+                        </div>
+                        <div className={`text-center px-3 py-1 rounded ${q.answer_count > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100'}`}>
+                          <div className="text-lg font-bold">{q.answer_count || 0}</div>
+                          <div className="text-xs">answers</div>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg text-gray-900 mb-2">{q.title}</h3>
+                        <p className="text-gray-600 text-sm line-clamp-2 mb-3">{q.content}</p>
+                        <div className="flex items-center gap-3 text-sm">
+                          <Badge>{q.category}</Badge>
+                          {q.status === "Answered" && (
+                            <Badge className="bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Answered
+                            </Badge>
+                          )}
+                          <span className="text-gray-500 flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            {q.views || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg">No questions found</p>
+                  <Button onClick={() => setShowAskDialog(true)} className="mt-4">
+                    Be the first to ask!
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

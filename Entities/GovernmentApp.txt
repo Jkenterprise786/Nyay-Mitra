@@ -1,0 +1,89 @@
+{
+  "name": "GovernmentApp",
+  "type": "object",
+  "properties": {
+    "app_name": {
+      "type": "string",
+      "description": "Name of the government app"
+    },
+    "ministry": {
+      "type": "string",
+      "description": "Ministry/Department"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Healthcare",
+        "Finance",
+        "Education",
+        "Agriculture",
+        "Transport",
+        "Utilities",
+        "Governance",
+        "Employment",
+        "Social Welfare",
+        "Other"
+      ],
+      "description": "App category"
+    },
+    "description": {
+      "type": "string",
+      "description": "App description"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key features"
+    },
+    "android_url": {
+      "type": "string",
+      "description": "Google Play Store URL"
+    },
+    "ios_url": {
+      "type": "string",
+      "description": "Apple App Store URL"
+    },
+    "web_url": {
+      "type": "string",
+      "description": "Website URL"
+    },
+    "rating": {
+      "type": "number",
+      "description": "User rating"
+    },
+    "downloads": {
+      "type": "string",
+      "description": "Download count"
+    },
+    "icon_url": {
+      "type": "string",
+      "description": "App icon URL"
+    }
+  },
+  "required": [
+    "app_name",
+    "ministry",
+    "category",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

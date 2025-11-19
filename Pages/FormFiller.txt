@@ -1,0 +1,364 @@
+
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Upload, FileText, Loader2, X, CheckCircle, AlertCircle, Camera } from "lucide-react";
+import { toast } from "sonner";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+export default function FormFiller() {
+  const [user, setUser] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [formType, setFormType] = useState("");
+  const [analysis, setAnalysis] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.log("User not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const formTypes = [
+    "Income Tax Form (ITR-1, ITR-2, etc)",
+    "GST Registration / Return",
+    "Passport Application",
+    "Driving License Application",
+    "Voter ID Application",
+    "PAN Card Application",
+    "Aadhaar Update / Correction",
+    "Property Registration / Mutation",
+    "Business License / Shop Act",
+    "RTI Application",
+    "Scholarship Application",
+    "Pension Application",
+    "Ration Card Application",
+    "Caste Certificate",
+    "Income Certificate",
+    "Domicile Certificate",
+    "Birth/Death Certificate",
+    "Marriage Registration",
+    "Vehicle Registration / Transfer",
+    "Police Verification Form",
+    "Other Government Form"
+  ];
+
+  const analyzeForm = async () => {
+    if (!selectedFile || !formType) {
+      toast.error("Please select a file and form type");
+      return;
+    }
+
+    if (!user) {
+      toast.error("Please login to use this feature");
+      base44.auth.redirectToLogin();
+      return;
+    }
+
+    setIsAnalyzing(true);
+
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are an AI form filling assistant. Analyze this ${formType} form image and provide:
+
+1. List all form fields you can identify
+2. For each field, provide:
+   - Field name/label
+   - What information is required
+   - Example of correct format
+   - Common mistakes to avoid
+   - Any helpful tips
+
+3. General guidance for filling this form
+
+Format your response as a structured JSON with these fields.`,
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            form_title: { type: "string" },
+            form_fields: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  field_name: { type: "string" },
+                  description: { type: "string" },
+                  required_info: { type: "string" },
+                  format_example: { type: "string" },
+                  common_mistakes: { type: "string" },
+                  tips: { type: "string" }
+                }
+              }
+            },
+            general_guidance: { type: "string" },
+            required_documents: {
+              type: "array",
+              items: { type: "string" }
+            }
+          }
+        }
+      });
+
+      setAnalysis(result);
+      toast.success("Form analyzed successfully!");
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast.error("Failed to analyze form. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File size must be less than 10MB");
+        return;
+      }
+      setSelectedFile(file);
+      setAnalysis(null);
+    }
+  };
+
+  const reset = () => {
+    setSelectedFile(null);
+    setFormType("");
+    setAnalysis(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <FileText className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold">AI Form Filler Assistant</h1>
+              <p className="text-blue-100 mt-1">Get help filling 20+ types of government forms</p>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <p className="text-blue-50 text-sm">
+              🤖 <strong>AI-Powered Analysis:</strong> Upload any government form and our AI will analyze every field, provide examples, warn about mistakes, and give you expert tips!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {!analysis ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload Your Form</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Form Type</Label>
+                <Select value={formType} onValueChange={setFormType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select form type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formTypes.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {!selectedFile ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="form-upload"
+                  />
+                  <label htmlFor="form-upload" className="cursor-pointer">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex gap-4">
+                        <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <Upload className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-blue-600" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 mb-2">Click to upload or take a photo</p>
+                        <p className="text-sm text-gray-500">PDF, JPG, PNG (max 10MB)</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={reset}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              )}
+
+              <Button
+                onClick={analyzeForm}
+                disabled={!selectedFile || !formType || isAnalyzing}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                size="lg"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Analyzing Form...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-5 h-5 mr-2" />
+                    Analyze Form
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {/* Analysis Results */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                      Analysis Complete
+                    </CardTitle>
+                    <p className="text-gray-600 mt-1">{analysis.form_title}</p>
+                  </div>
+                  <Button variant="outline" onClick={reset}>
+                    <X className="w-4 h-4 mr-2" />
+                    New Form
+                  </Button>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* General Guidance */}
+            {analysis.general_guidance && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>General Guidance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 leading-relaxed">{analysis.general_guidance}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Required Documents */}
+            {analysis.required_documents && analysis.required_documents.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Required Documents</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-2">
+                    {analysis.required_documents.map((doc, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-sm">{doc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Form Fields */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Form Fields Guidance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="space-y-2">
+                  {analysis.form_fields?.map((field, index) => (
+                    <AccordionItem key={index} value={`field-${index}`}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-3">
+                          <Badge className="bg-blue-600">{index + 1}</Badge>
+                          <span className="font-medium">{field.field_name}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="ml-11 space-y-3 pt-2">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Description</p>
+                            <p className="text-sm text-gray-600 mt-1">{field.description}</p>
+                          </div>
+
+                          {field.required_info && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">Required Information</p>
+                              <p className="text-sm text-gray-600 mt-1">{field.required_info}</p>
+                            </div>
+                          )}
+
+                          {field.format_example && (
+                            <div className="bg-green-50 border border-green-200 rounded p-3">
+                              <p className="text-xs font-medium text-green-800 mb-1">✓ Format Example</p>
+                              <p className="text-sm text-green-700">{field.format_example}</p>
+                            </div>
+                          )}
+
+                          {field.common_mistakes && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                              <p className="text-xs font-medium text-yellow-800 mb-1">⚠ Common Mistakes</p>
+                              <p className="text-sm text-yellow-700">{field.common_mistakes}</p>
+                            </div>
+                          )}
+
+                          {field.tips && (
+                            <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                              <p className="text-xs font-medium text-blue-800 mb-1">💡 Tips</p>
+                              <p className="text-sm text-blue-700">{field.tips}</p>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

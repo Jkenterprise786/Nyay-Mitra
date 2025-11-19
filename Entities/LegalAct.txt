@@ -1,0 +1,100 @@
+{
+  "name": "LegalAct",
+  "type": "object",
+  "properties": {
+    "act_name": {
+      "type": "string",
+      "description": "Name of the Act"
+    },
+    "act_year": {
+      "type": "number",
+      "description": "Year enacted"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Civil",
+        "Criminal",
+        "Constitutional",
+        "Labor",
+        "Corporate",
+        "Consumer",
+        "Property",
+        "Tax",
+        "Environmental",
+        "Other"
+      ],
+      "description": "Category of Act"
+    },
+    "description": {
+      "type": "string",
+      "description": "Brief description"
+    },
+    "key_provisions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key provisions"
+    },
+    "applicability": {
+      "type": "string",
+      "description": "Where it applies"
+    },
+    "important_sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "section_number": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL to full Act PDF"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English"
+    }
+  },
+  "required": [
+    "act_name",
+    "act_year",
+    "category",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

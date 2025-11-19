@@ -1,0 +1,196 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useMutation } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+export default function BookingForm({ lawyer, open, onClose }) {
+  const [user, setUser] = useState(null);
+  const [formData, setFormData] = useState({
+    consultation_date: "",
+    mode: "",
+    issue_description: ""
+  });
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.log("User not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const bookingMutation = useMutation({
+    mutationFn: async (bookingData) => {
+      return await base44.entities.Consultation.create(bookingData);
+    },
+    onSuccess: () => {
+      toast.success("Consultation booked successfully! The lawyer will contact you soon.");
+      onClose();
+      setFormData({
+        consultation_date: "",
+        mode: "",
+        issue_description: ""
+      });
+    },
+    onError: () => {
+      toast.error("Failed to book consultation. Please try again.");
+    }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (!user) {
+      toast.error("Please login to book a consultation");
+      base44.auth.redirectToLogin();
+      return;
+    }
+
+    bookingMutation.mutate({
+      user_id: user.id,
+      lawyer_id: lawyer.id,
+      consultation_date: formData.consultation_date,
+      mode: formData.mode,
+      duration: 30,
+      amount_paid: lawyer.consultation_fee,
+      issue_description: formData.issue_description,
+      payment_status: "Pending",
+      status: "Scheduled"
+    });
+  };
+
+  // Generate available time slots (9 AM to 5 PM)
+  const timeSlots = [];
+  for (let hour = 9; hour <= 17; hour++) {
+    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+    if (hour < 17) {
+      timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Book Consultation</DialogTitle>
+          <p className="text-gray-600">with {lawyer.name}</p>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <p className="text-sm text-purple-800">
+              <strong>Consultation Fee:</strong> ₹{lawyer.consultation_fee}
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="mode">Consultation Mode *</Label>
+            <Select 
+              value={formData.mode} 
+              onValueChange={(value) => setFormData({...formData, mode: value})}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select consultation mode" />
+              </SelectTrigger>
+              <SelectContent>
+                {lawyer.consultation_modes?.map((mode, index) => (
+                  <SelectItem key={index} value={mode}>{mode}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date">Date *</Label>
+              <Input
+                id="date"
+                type="date"
+                min={new Date().toISOString().split('T')[0]}
+                value={formData.consultation_date.split('T')[0] || ""}
+                onChange={(e) => {
+                  const dateTime = e.target.value + 'T10:00';
+                  setFormData({...formData, consultation_date: dateTime});
+                }}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="time">Time *</Label>
+              <Select 
+                value={formData.consultation_date.split('T')[1]?.substring(0, 5) || ""}
+                onValueChange={(value) => {
+                  const date = formData.consultation_date.split('T')[0] || new Date().toISOString().split('T')[0];
+                  setFormData({...formData, consultation_date: `${date}T${value}`});
+                }}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((slot, index) => (
+                    <SelectItem key={index} value={slot}>{slot}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="issue">Describe Your Legal Issue *</Label>
+            <Textarea
+              id="issue"
+              placeholder="Please provide details about your legal issue..."
+              value={formData.issue_description}
+              onChange={(e) => setFormData({...formData, issue_description: e.target.value})}
+              rows={4}
+              required
+            />
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+            <strong>Note:</strong> After booking, the lawyer will contact you at the scheduled time. 
+            Payment will be processed after the consultation.
+          </div>
+
+          <div className="flex gap-3">
+            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              disabled={bookingMutation.isPending}
+            >
+              {bookingMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Booking...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Confirm Booking
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

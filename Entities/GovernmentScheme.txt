@@ -1,0 +1,132 @@
+{
+  "name": "GovernmentScheme",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Scheme name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the scheme"
+    },
+    "state": {
+      "type": "string",
+      "description": "State where scheme is applicable (use 'Central' for nationwide schemes)"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Agriculture",
+        "Education",
+        "Healthcare",
+        "Housing",
+        "Women Empowerment",
+        "Senior Citizens",
+        "Financial Assistance",
+        "Employment",
+        "Business & Entrepreneurship",
+        "Social Welfare",
+        "Skill Development",
+        "Other"
+      ],
+      "description": "Category of the scheme"
+    },
+    "eligibility_criteria": {
+      "type": "object",
+      "description": "JSON object containing eligibility requirements",
+      "properties": {
+        "min_age": {
+          "type": "number"
+        },
+        "max_age": {
+          "type": "number"
+        },
+        "income_limit": {
+          "type": "number"
+        },
+        "occupation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "social_category": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gender": {
+          "type": "string"
+        },
+        "other_criteria": {
+          "type": "string"
+        }
+      }
+    },
+    "required_documents": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of required documents"
+    },
+    "application_link": {
+      "type": "string",
+      "description": "Official application portal URL"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "Application deadline"
+    },
+    "benefit_amount": {
+      "type": "string",
+      "description": "Benefit amount or description"
+    },
+    "processing_time": {
+      "type": "string",
+      "description": "Expected processing time"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether scheme is currently active"
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "state",
+    "category"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

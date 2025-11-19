@@ -1,0 +1,411 @@
+
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X, Upload, Camera, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+
+export default function UserProfile() {
+  const [user, setUser] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    date_of_birth: "",
+    occupation: "",
+    bio: "",
+    profile_photo: ""
+  });
+  
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      setFormData({
+        full_name: currentUser.full_name || "",
+        phone: currentUser.phone || "",
+        address: currentUser.address || "",
+        city: currentUser.city || "",
+        state: currentUser.state || "",
+        pincode: currentUser.pincode || "",
+        date_of_birth: currentUser.date_of_birth || "",
+        occupation: currentUser.occupation || "",
+        bio: currentUser.bio || "",
+        profile_photo: currentUser.profile_photo || ""
+      });
+    } catch (error) {
+      toast.error("Please login to view profile");
+      base44.auth.redirectToLogin();
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData({...formData, profile_photo: file_url});
+      
+      // Auto-save photo
+      await base44.auth.updateMe({ profile_photo: file_url });
+      toast.success("Profile photo updated!");
+      await loadUser();
+      queryClient.invalidateQueries();
+      
+      // Trigger profile update event for sidebar
+      window.dispatchEvent(new Event('profileUpdated'));
+    } catch (error) {
+      toast.error("Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const generateAIBio = async () => {
+    if (!formData.occupation) {
+      toast.error("Please enter your occupation first");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const bio = await base44.integrations.Core.InvokeLLM({
+        prompt: `Generate a short, professional bio (2-3 sentences) for a person who is a ${formData.occupation} living in ${formData.city || 'India'}. Make it friendly and personable.`
+      });
+      setFormData({...formData, bio});
+      toast.success("AI bio generated!");
+    } catch (error) {
+      toast.error("Failed to generate bio");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await base44.auth.updateMe(formData);
+      toast.success("Profile updated successfully!");
+      setIsEditing(false);
+      await loadUser();
+      queryClient.invalidateQueries();
+      
+      // Trigger profile update event for sidebar
+      window.dispatchEvent(new Event('profileUpdated'));
+    } catch (error) {
+      toast.error("Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      full_name: user.full_name || "",
+      phone: user.phone || "",
+      address: user.address || "",
+      city: user.city || "",
+      state: user.state || "",
+      pincode: user.pincode || "",
+      date_of_birth: user.date_of_birth || "",
+      occupation: user.occupation || "",
+      bio: user.bio || "",
+      profile_photo: user.profile_photo || ""
+    });
+    setIsEditing(false);
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600" />
+      </div>
+    );
+  }
+
+  const avatarColors = [
+    'from-orange-400 to-orange-600',
+    'from-blue-400 to-blue-600',
+    'from-green-400 to-green-600',
+    'from-purple-400 to-purple-600',
+    'from-pink-400 to-pink-600'
+  ];
+  const avatarColor = avatarColors[user.email.charCodeAt(0) % avatarColors.length];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            {/* Profile Photo */}
+            <div className="relative group">
+              {formData.profile_photo ? (
+                <img
+                  src={formData.profile_photo}
+                  alt={user.full_name}
+                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl"
+                />
+              ) : (
+                <div className={`w-32 h-32 bg-gradient-to-br ${avatarColor} rounded-full flex items-center justify-center border-4 border-white shadow-xl`}>
+                  <User className="w-16 h-16 text-white" />
+                </div>
+              )}
+              
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="hidden"
+                id="photo-upload"
+              />
+              <label
+                htmlFor="photo-upload"
+                className="absolute bottom-0 right-0 bg-white text-orange-600 p-2 rounded-full cursor-pointer shadow-lg hover:bg-orange-50 transition-colors"
+              >
+                {uploadingPhoto ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+              </label>
+            </div>
+
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-3xl md:text-4xl font-bold">{user.full_name}</h1>
+              <p className="text-orange-100 mt-1">{user.email}</p>
+              <p className="text-orange-200 text-sm mt-1">Member since {new Date(user.created_date).toLocaleDateString()}</p>
+              {formData.occupation && (
+                <p className="text-orange-100 mt-2">📍 {formData.occupation} {formData.city && `• ${formData.city}`}</p>
+              )}
+            </div>
+
+            {!isEditing && (
+              <Button
+                onClick={() => setIsEditing(true)}
+                className="bg-white text-orange-600 hover:bg-orange-50"
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit Profile
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Personal Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="full_name">Full Name *</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      disabled={!isEditing}
+                      className="pl-10"
+                      placeholder="+91 XXXXX XXXXX"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email (Cannot be changed)</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      value={user.email}
+                      disabled
+                      className="pl-10 bg-gray-100"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="date_of_birth"
+                      type="date"
+                      value={formData.date_of_birth}
+                      onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="occupation">Occupation</Label>
+                  <Input
+                    id="occupation"
+                    value={formData.occupation}
+                    onChange={(e) => setFormData({...formData, occupation: e.target.value})}
+                    disabled={!isEditing}
+                    placeholder="Your occupation"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="city">City</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({...formData, city: e.target.value})}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => setFormData({...formData, state: e.target.value})}
+                    disabled={!isEditing}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input
+                    id="pincode"
+                    value={formData.pincode}
+                    onChange={(e) => setFormData({...formData, pincode: e.target.value})}
+                    disabled={!isEditing}
+                    placeholder="6-digit pincode"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  disabled={!isEditing}
+                  rows={3}
+                  placeholder="Complete address"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  {isEditing && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={generateAIBio}
+                      disabled={loading || !formData.occupation}
+                    >
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      AI Generate
+                    </Button>
+                  )}
+                </div>
+                <Textarea
+                  id="bio"
+                  value={formData.bio}
+                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                  disabled={!isEditing}
+                  rows={3}
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+
+              {isEditing && (
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={loading}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={loading}
+                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {loading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Info */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Account Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-gray-600">Account Type</p>
+                <p className="font-semibold capitalize">{user.role}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Member Since</p>
+                <p className="font-semibold">{new Date(user.created_date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

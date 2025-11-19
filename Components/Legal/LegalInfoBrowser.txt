@@ -1,0 +1,200 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Search, BookOpen, Scale, Users, Home, Briefcase, AlertCircle } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+export default function LegalInfoBrowser() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const { data: legalInfo, isLoading } = useQuery({
+    queryKey: ['legal-info'],
+    queryFn: () => base44.entities.LegalInformation.list('-created_date'),
+    initialData: []
+  });
+
+  const filteredInfo = legalInfo.filter(info => {
+    const matchesSearch = info.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         info.content?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || info.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = [
+    { value: "Consumer Rights", icon: Users, color: "bg-blue-100 text-blue-800" },
+    { value: "Tenant Rights", icon: Home, color: "bg-green-100 text-green-800" },
+    { value: "Employee Rights", icon: Briefcase, color: "bg-purple-100 text-purple-800" },
+    { value: "Property Rights", icon: Scale, color: "bg-orange-100 text-orange-800" },
+    { value: "Family Law", icon: Users, color: "bg-pink-100 text-pink-800" }
+  ];
+
+  const categoryIcons = {
+    "Consumer Rights": Users,
+    "Tenant Rights": Home,
+    "Employee Rights": Briefcase,
+    "Property Rights": Scale,
+    "Family Law": Users,
+    "Criminal Law": AlertCircle,
+    "Civil Law": BookOpen
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Search and Filter */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="search">Search Topics</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Search legal information..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Category</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.value}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Popular Categories */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Browse by Category</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {categories.map((category, index) => {
+            const Icon = category.icon;
+            const count = legalInfo.filter(info => info.category === category.value).length;
+            return (
+              <Card 
+                key={index} 
+                className="cursor-pointer hover:shadow-md transition-all"
+                onClick={() => setSelectedCategory(category.value)}
+              >
+                <CardContent className="p-4 text-center">
+                  <div className={`w-12 h-12 ${category.color} rounded-xl flex items-center justify-center mx-auto mb-2`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">{category.value}</p>
+                  <p className="text-xs text-gray-500">{count} topics</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Legal Information List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Legal Information</CardTitle>
+          <CardDescription>
+            {filteredInfo.length} topic{filteredInfo.length !== 1 ? 's' : ''} found
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-20 bg-gray-200 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : filteredInfo.length > 0 ? (
+            <Accordion type="single" collapsible className="space-y-2">
+              {filteredInfo.map((info, index) => {
+                const Icon = categoryIcons[info.category] || BookOpen;
+                return (
+                  <AccordionItem key={index} value={`info-${index}`}>
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-3 text-left">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{info.topic}</p>
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {info.category}
+                          </Badge>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="ml-13 space-y-4">
+                        <div className="prose prose-sm max-w-none">
+                          <p className="text-gray-600 whitespace-pre-wrap">{info.content}</p>
+                        </div>
+
+                        {info.relevant_laws && info.relevant_laws.length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Relevant Laws:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {info.relevant_laws.map((law, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {law}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {(info.typical_timeline || info.estimated_cost) && (
+                          <div className="grid md:grid-cols-2 gap-4 pt-3 border-t border-gray-200">
+                            {info.typical_timeline && (
+                              <div>
+                                <p className="text-xs font-medium text-gray-500 mb-1">Typical Timeline</p>
+                                <p className="text-sm text-gray-700">{info.typical_timeline}</p>
+                              </div>
+                            )}
+                            {info.estimated_cost && (
+                              <div>
+                                <p className="text-xs font-medium text-gray-500 mb-1">Estimated Cost</p>
+                                <p className="text-sm text-gray-700">{info.estimated_cost}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded text-xs text-yellow-800">
+                          <strong>Note:</strong> This is legal information, not legal advice. For your specific case, consult a qualified lawyer.
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          ) : (
+            <div className="text-center py-12">
+              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">No information found</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

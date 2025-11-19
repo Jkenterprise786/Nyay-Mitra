@@ -1,0 +1,53 @@
+{
+  "name": "SavedScheme",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID"
+    },
+    "scheme_id": {
+      "type": "string",
+      "description": "Government Scheme ID"
+    },
+    "application_status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "In Progress",
+        "Submitted",
+        "Approved",
+        "Rejected"
+      ],
+      "default": "Not Started",
+      "description": "Application status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes"
+    },
+    "reminder_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Reminder date"
+    }
+  },
+  "required": [
+    "user_id",
+    "scheme_id"
+  ],
+  "rls": {
+    "create": {
+      "user_id": "{{user.id}}"
+    },
+    "read": {
+      "user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_id": "{{user.id}}"
+    }
+  }
+}

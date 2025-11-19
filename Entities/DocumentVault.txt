@@ -1,0 +1,73 @@
+{
+  "name": "DocumentVault",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID"
+    },
+    "document_name": {
+      "type": "string",
+      "description": "Name of document"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "Aadhaar Card",
+        "PAN Card",
+        "Passport",
+        "Driving License",
+        "Voter ID",
+        "Birth Certificate",
+        "Property Documents",
+        "Educational Certificates",
+        "Income Certificate",
+        "Caste Certificate",
+        "Other"
+      ],
+      "description": "Type of document"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Encrypted file URL"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "File size in bytes"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether document is verified"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Document expiry date"
+    },
+    "notes": {
+      "type": "string",
+      "description": "User notes"
+    }
+  },
+  "required": [
+    "user_id",
+    "document_name",
+    "document_type",
+    "file_url"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

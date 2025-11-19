@@ -1,0 +1,104 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Scale, Upload, BookOpen, FileSearch, Shield } from "lucide-react";
+import { toast } from "sonner";
+
+import DocumentAnalyzer from "../components/legal/DocumentAnalyzer";
+import LegalInfoBrowser from "../components/legal/LegalInfoBrowser";
+
+export default function LegalHelp() {
+  const [activeTab, setActiveTab] = useState("analyzer");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.log("User not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const features = [
+    {
+      icon: FileSearch,
+      title: "Document Analyzer",
+      description: "Upload legal documents to get simplified explanations and risk analysis",
+      tab: "analyzer"
+    },
+    {
+      icon: BookOpen,
+      title: "Know Your Rights",
+      description: "Learn about your legal rights in simple language",
+      tab: "rights"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <Scale className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold">Legal Helpdesk</h1>
+              <p className="text-green-100 mt-1">Understand legal documents and know your rights</p>
+            </div>
+          </div>
+
+          <div className="bg-yellow-400/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-300/30">
+            <div className="flex gap-2">
+              <Shield className="w-5 h-5 text-yellow-200 flex-shrink-0 mt-0.5" />
+              <p className="text-yellow-50 text-sm">
+                <strong className="font-semibold">Disclaimer:</strong> This platform provides legal INFORMATION only, not legal ADVICE. 
+                For advice specific to your case, consult a verified lawyer.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Feature Cards */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {features.map((feature, index) => (
+            <Card 
+              key={index} 
+              className={`cursor-pointer hover:shadow-lg transition-all ${activeTab === feature.tab ? 'border-2 border-green-500' : ''}`}
+              onClick={() => setActiveTab(feature.tab)}
+            >
+              <CardHeader>
+                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3">
+                  <feature.icon className="w-6 h-6 text-green-600" />
+                </div>
+                <CardTitle>{feature.title}</CardTitle>
+                <CardDescription>{feature.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+
+        {/* Tabs Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsContent value="analyzer">
+            <DocumentAnalyzer user={user} />
+          </TabsContent>
+
+          <TabsContent value="rights">
+            <LegalInfoBrowser />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,367 @@
+import React, { useState, useEffect, useRef } from "react";
+import { base44 } from "@/api/base44Client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Download, Loader2, Copy, CheckCircle, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
+import html2canvas from 'html2canvas';
+
+export default function NoticeGenerator() {
+  const [user, setUser] = useState(null);
+  const [noticeType, setNoticeType] = useState("");
+  const [formData, setFormData] = useState({
+    your_name: "",
+    your_address: "",
+    recipient_name: "",
+    recipient_address: "",
+    issue_description: "",
+    desired_outcome: "",
+    deadline_days: "15"
+  });
+  const [generatedNotice, setGeneratedNotice] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const noticeRef = useRef(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.log("User not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const noticeTypes = [
+    { value: "Consumer Complaint", label: "Consumer Complaint Notice" },
+    { value: "Tenant Notice", label: "Tenant Notice (Non-payment/Eviction)" },
+    { value: "Landlord Notice", label: "Landlord Notice" },
+    { value: "Property Dispute", label: "Property Dispute Notice" },
+    { value: "Loan Recovery", label: "Loan Recovery Notice" },
+    { value: "Cheque Bounce", label: "Cheque Bounce Notice (Section 138)" },
+    { value: "Defamation", label: "Defamation Notice" },
+    { value: "Employment Issue", label: "Employment Dispute Notice" },
+    { value: "Contract Breach", label: "Contract Breach Notice" },
+    { value: "Divorce", label: "Divorce Notice" },
+    { value: "Maintenance", label: "Maintenance Claim Notice" },
+    { value: "Child Custody", label: "Child Custody Notice" },
+    { value: "Trademark Infringement", label: "Trademark/Copyright Infringement" },
+    { value: "Harassment", label: "Harassment Notice" },
+    { value: "Neighborhood Dispute", label: "Neighborhood Nuisance Notice" },
+    { value: "Vehicle Accident", label: "Motor Accident Claim Notice" },
+    { value: "Insurance Claim", label: "Insurance Claim Rejection Notice" },
+    { value: "Wrongful Termination", label: "Wrongful Termination Notice" },
+    { value: "Partnership Dissolution", label: "Partnership Dissolution Notice" },
+    { value: "Custom", label: "Custom Notice (Describe your situation)" }
+  ];
+
+  const generateNotice = async () => {
+    if (!noticeType || !formData.your_name || !formData.recipient_name || !formData.issue_description) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    if (!user) {
+      toast.error("Please login to generate notices");
+      base44.auth.redirectToLogin();
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const currentDate = new Date().toLocaleDateString('en-IN', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      });
+
+      const prompt = `Generate a professional legal notice in formal Indian legal format for the following:
+
+Notice Type: ${noticeType}
+
+Sender Details:
+Name: ${formData.your_name}
+Address: ${formData.your_address}
+
+Recipient Details:
+Name: ${formData.recipient_name}
+Address: ${formData.recipient_address}
+
+Issue Description: ${formData.issue_description}
+Desired Outcome: ${formData.desired_outcome}
+Response Deadline: ${formData.deadline_days} days from date of receipt
+
+Date: ${currentDate}
+
+Format the notice with:
+1. Proper legal notice header
+2. Reference number
+3. Subject line
+4. Formal legal language
+5. Clear statement of facts
+6. Legal basis/relevant sections if applicable
+7. Demands/relief sought
+8. Deadline for response
+9. Warning of legal action
+10. Proper closing
+
+Make it professional, legally sound, and suitable for sending via registered post.`;
+
+      const notice = await base44.integrations.Core.InvokeLLM({ prompt });
+
+      setGeneratedNotice(notice);
+      toast.success("Legal notice generated successfully!");
+    } catch (error) {
+      console.error("Generation error:", error);
+      toast.error("Failed to generate notice. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedNotice);
+    toast.success("Notice copied to clipboard!");
+  };
+
+  const downloadAsText = () => {
+    const element = document.createElement("a");
+    const file = new Blob([generatedNotice], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `Legal_Notice_${noticeType.replace(/\s+/g, '_')}_${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success("Notice downloaded as text!");
+  };
+
+  const downloadAsImage = async (format) => {
+    if (!noticeRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(noticeRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+      
+      const link = document.createElement('a');
+      link.download = `Legal_Notice_${noticeType.replace(/\s+/g, '_')}_${Date.now()}.${format}`;
+      link.href = canvas.toDataURL(`image/${format}`);
+      link.click();
+      
+      toast.success(`Notice downloaded as ${format.toUpperCase()}!`);
+    } catch (error) {
+      toast.error("Failed to download image");
+    }
+  };
+
+  const reset = () => {
+    setNoticeType("");
+    setFormData({
+      your_name: "",
+      your_address: "",
+      recipient_name: "",
+      recipient_address: "",
+      issue_description: "",
+      desired_outcome: "",
+      deadline_days: "15"
+    });
+    setGeneratedNotice(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+              <FileText className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold">Legal Notice Generator</h1>
+              <p className="text-indigo-100 mt-1">Generate 20+ types of legal notices with image export</p>
+            </div>
+          </div>
+
+          <div className="bg-yellow-400/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-300/30">
+            <p className="text-yellow-50 text-sm">
+              <strong>🤖 AI-Powered:</strong> Generate notices and download as TXT, PNG, JPG, or JPEG!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {!generatedNotice ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Generate Legal Notice</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label>Notice Type *</Label>
+                <Select value={noticeType} onValueChange={setNoticeType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select notice type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {noticeTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Your Details</h3>
+                  <div>
+                    <Label>Your Name *</Label>
+                    <Input
+                      value={formData.your_name}
+                      onChange={(e) => setFormData({...formData, your_name: e.target.value})}
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Your Address *</Label>
+                    <Textarea
+                      value={formData.your_address}
+                      onChange={(e) => setFormData({...formData, your_address: e.target.value})}
+                      placeholder="Enter your complete address"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900">Recipient Details</h3>
+                  <div>
+                    <Label>Recipient Name *</Label>
+                    <Input
+                      value={formData.recipient_name}
+                      onChange={(e) => setFormData({...formData, recipient_name: e.target.value})}
+                      placeholder="Enter recipient's name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Recipient Address *</Label>
+                    <Textarea
+                      value={formData.recipient_address}
+                      onChange={(e) => setFormData({...formData, recipient_address: e.target.value})}
+                      placeholder="Enter recipient's address"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label>Issue Description *</Label>
+                <Textarea
+                  value={formData.issue_description}
+                  onChange={(e) => setFormData({...formData, issue_description: e.target.value})}
+                  placeholder="Describe the issue in detail..."
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <Label>Desired Outcome *</Label>
+                <Textarea
+                  value={formData.desired_outcome}
+                  onChange={(e) => setFormData({...formData, desired_outcome: e.target.value})}
+                  placeholder="What do you want the recipient to do?"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label>Response Deadline (days)</Label>
+                <Input
+                  type="number"
+                  value={formData.deadline_days}
+                  onChange={(e) => setFormData({...formData, deadline_days: e.target.value})}
+                  min="7"
+                  max="90"
+                />
+              </div>
+
+              <Button
+                onClick={generateNotice}
+                disabled={isGenerating}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                size="lg"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Generating Notice...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-5 h-5 mr-2" />
+                    Generate Legal Notice
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                      Notice Generated
+                    </CardTitle>
+                    <p className="text-gray-600 mt-1">{noticeType}</p>
+                  </div>
+                  <Button variant="outline" onClick={reset}>
+                    Generate New
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div ref={noticeRef} className="bg-white rounded-lg p-8 border-2 border-gray-200">
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 leading-relaxed">
+                    {generatedNotice}
+                  </pre>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Button onClick={copyToClipboard} variant="outline">
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy
+                  </Button>
+                  <Button onClick={downloadAsText} variant="outline">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download TXT
+                  </Button>
+                  <Button onClick={() => downloadAsImage('png')} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    PNG
+                  </Button>
+                  <Button onClick={() => downloadAsImage('jpeg')} className="bg-green-600 hover:bg-green-700 text-white">
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    JPG/JPEG
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

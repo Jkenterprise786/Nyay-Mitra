@@ -1,0 +1,88 @@
+{
+  "name": "LegalInformation",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "Consumer Rights",
+        "Tenant Rights",
+        "Employee Rights",
+        "Property Rights",
+        "Family Law",
+        "Criminal Law",
+        "Civil Law",
+        "Other"
+      ],
+      "description": "Legal information category"
+    },
+    "topic": {
+      "type": "string",
+      "description": "Specific topic"
+    },
+    "content": {
+      "type": "string",
+      "description": "Detailed content in simple language"
+    },
+    "relevant_laws": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Relevant Indian laws and acts"
+    },
+    "case_law_references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Related case law references"
+    },
+    "typical_timeline": {
+      "type": "string",
+      "description": "Typical timeline for legal process"
+    },
+    "estimated_cost": {
+      "type": "string",
+      "description": "Estimated costs involved"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "Last update date"
+    }
+  },
+  "required": [
+    "category",
+    "topic",
+    "content"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

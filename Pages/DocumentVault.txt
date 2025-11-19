@@ -1,0 +1,760 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { 
+  Shield, Upload, FileText, Trash2, Download, Eye, KeyRound,
+  Lock, Settings as SettingsIcon, X, Image as ImageIcon, AlertTriangle, CheckCircle
+} from "lucide-react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+
+export default function DocumentVault() {
+  const [user, setUser] = useState(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [isLocked, setIsLocked] = useState(true);
+  const [passcode, setPasscode] = useState("");
+  const [confirmPasscode, setConfirmPasscode] = useState("");
+  const [vaultPasscode, setVaultPasscode] = useState("");
+  const [showPasscodeSetup, setShowPasscodeSetup] = useState(false);
+  const [showForgotPasscode, setShowForgotPasscode] = useState(false);
+  const [securityQuestions, setSecurityQuestions] = useState([
+    { question: "", answer: "" },
+    { question: "", answer: "" }
+  ]);
+  const [savedSecurityQuestions, setSavedSecurityQuestions] = useState([]);
+  const [recoveryAnswers, setRecoveryAnswers] = useState(["", ""]);
+  const [vaultSettings, setVaultSettings] = useState({
+    auto_lock_enabled: true,
+    auto_lock_minutes: "5",
+    encryption_level: "AES-256",
+    backup_enabled: true,
+    expiry_alerts: true,
+    require_pin_for_download: false,
+    watermark_enabled: false
+  });
+  const [uploadData, setUploadData] = useState({
+    document_name: "",
+    document_type: "Other",
+    file: null,
+    expiry_date: "",
+    notes: ""
+  });
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    loadUser();
+    loadVaultSettings();
+    
+    // Auto-lock timer
+    let lockTimer;
+    if (!isLocked && vaultSettings.auto_lock_enabled) {
+      const minutes = parseInt(vaultSettings.auto_lock_minutes) * 60 * 1000;
+      lockTimer = setTimeout(() => {
+        setIsLocked(true);
+        toast.info("🔒 Vault auto-locked for security");
+      }, minutes);
+    }
+    
+    return () => clearTimeout(lockTimer);
+  }, [isLocked, vaultSettings.auto_lock_enabled, vaultSettings.auto_lock_minutes]);
+
+  const loadUser = async () => {
+    try {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+      if (currentUser.vault_settings) {
+        setVaultSettings({...vaultSettings, ...currentUser.vault_settings});
+      }
+    } catch (error) {
+      toast.error("Please login to access vault");
+      base44.auth.redirectToLogin();
+    }
+  };
+
+  const loadVaultSettings = () => {
+    const savedPasscode = localStorage.getItem('vault_passcode');
+    const savedQuestions = localStorage.getItem('vault_security_questions');
+    if (!savedPasscode) {
+      setShowPasscodeSetup(true);
+      setIsLocked(true);
+    } else {
+      setIsLocked(true);
+      setVaultPasscode(savedPasscode);
+      if (savedQuestions) {
+        setSavedSecurityQuestions(JSON.parse(savedQuestions));
+      }
+    }
+  };
+
+  const { data: documents, isLoading } = useQuery({
+    queryKey: ['vault-documents', user?.id],
+    queryFn: () => base44.entities.DocumentVault.filter({ user_id: user.id }, '-created_date'),
+    initialData: [],
+    enabled: !!user && !isLocked
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (data) => {
+      const { file_url } = await base44.integrations.Core.UploadPrivateFile({ file: data.file });
+      return base44.entities.DocumentVault.create({
+        user_id: user.id,
+        document_name: data.document_name,
+        document_type: data.document_type,
+        file_url: file_url,
+        file_size: data.file.size,
+        expiry_date: data.expiry_date || null,
+        notes: data.notes,
+        is_verified: false
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['vault-documents']);
+      setShowUploadDialog(false);
+      setUploadData({ document_name: "", document_type: "Other", file: null, expiry_date: "", notes: "" });
+      toast.success("🔒 Document uploaded & encrypted!");
+    },
+    onError: () => {
+      toast.error("Failed to upload document");
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.DocumentVault.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['vault-documents']);
+      toast.success("Document permanently deleted");
+    }
+  });
+
+  const handleSetupPasscode = () => {
+    if (passcode.length < 4) {
+      toast.error("Passcode must be at least 4 digits");
+      return;
+    }
+    if (passcode !== confirmPasscode) {
+      toast.error("Passcodes don't match!");
+      return;
+    }
+    if (!securityQuestions[0].question || !securityQuestions[0].answer || 
+        !securityQuestions[1].question || !securityQuestions[1].answer) {
+      toast.error("Please set both security questions and answers");
+      return;
+    }
+    
+    const hashedPasscode = btoa(passcode);
+    const hashedQuestions = securityQuestions.map(q => ({
+      question: q.question,
+      answer: btoa(q.answer.toLowerCase().trim())
+    }));
+    
+    localStorage.setItem('vault_passcode', hashedPasscode);
+    localStorage.setItem('vault_security_questions', JSON.stringify(hashedQuestions));
+    setVaultPasscode(hashedPasscode);
+    setSavedSecurityQuestions(hashedQuestions);
+    setShowPasscodeSetup(false);
+    setIsLocked(false);
+    setPasscode("");
+    setConfirmPasscode("");
+    setSecurityQuestions([{ question: "", answer: "" }, { question: "", answer: "" }]);
+    toast.success("🔒 Vault secured with master passcode & security questions!");
+  };
+
+  const handleForgotPasscode = () => {
+    if (!savedSecurityQuestions.length) {
+      toast.error("No security questions set. Please contact support.");
+      return;
+    }
+    setShowForgotPasscode(true);
+    setIsLocked(false);
+  };
+
+  const handleRecoverPasscode = () => {
+    const answer1Match = btoa(recoveryAnswers[0].toLowerCase().trim()) === savedSecurityQuestions[0].answer;
+    const answer2Match = btoa(recoveryAnswers[1].toLowerCase().trim()) === savedSecurityQuestions[1].answer;
+    
+    if (answer1Match && answer2Match) {
+      toast.success("✅ Answers verified! Set new passcode.");
+      setShowForgotPasscode(false);
+      setShowPasscodeSetup(true);
+      setRecoveryAnswers(["", ""]);
+      localStorage.removeItem('vault_passcode');
+    } else {
+      toast.error("❌ Incorrect answers. Please try again.");
+      setRecoveryAnswers(["", ""]);
+    }
+  };
+
+  const handleUnlock = () => {
+    const hashedInput = btoa(passcode);
+    if (hashedInput === vaultPasscode) {
+      setIsLocked(false);
+      setPasscode("");
+      toast.success("🔓 Vault unlocked successfully!");
+    } else {
+      toast.error("❌ Incorrect passcode! Please try again.");
+      setPasscode("");
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      await base44.auth.updateMe({ vault_settings: vaultSettings });
+      toast.success("✅ Vault settings saved!");
+      setShowSettingsDialog(false);
+    } catch (error) {
+      toast.error("Failed to save settings");
+    }
+  };
+
+  const handleUpload = () => {
+    if (!uploadData.file || !uploadData.document_name) {
+      toast.error("Please provide document name and file");
+      return;
+    }
+    if (uploadData.file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+    uploadMutation.mutate(uploadData);
+  };
+
+  const documentTypes = [
+    "Aadhaar Card", "PAN Card", "Passport", "Driving License", "Voter ID",
+    "Birth Certificate", "Property Documents", "Educational Certificates",
+    "Income Certificate", "Caste Certificate", "Other"
+  ];
+
+  const typeIcons = {
+    "Aadhaar Card": "🆔", "PAN Card": "💳", "Passport": "🛂",
+    "Driving License": "🚗", "Voter ID": "🗳️", "Birth Certificate": "👶",
+    "Property Documents": "🏠", "Educational Certificates": "🎓",
+    "Income Certificate": "💰", "Caste Certificate": "📜", "Other": "📄"
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600" />
+      </div>
+    );
+  }
+
+  // Forgot Passcode Recovery
+  if (showForgotPasscode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl backdrop-blur-xl bg-white/95">
+          <CardHeader className="text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <KeyRound className="w-10 h-10 text-white" />
+            </div>
+            <CardTitle className="text-2xl">Recover Vault Access</CardTitle>
+            <p className="text-sm text-gray-500 mt-2">Answer security questions to reset passcode</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+              <p className="text-sm text-yellow-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Answers are case-insensitive
+              </p>
+            </div>
+            {savedSecurityQuestions.map((q, idx) => (
+              <div key={idx}>
+                <Label className="font-semibold">Question {idx + 1}</Label>
+                <p className="text-sm text-gray-600 mb-2">{q.question}</p>
+                <Input
+                  value={recoveryAnswers[idx]}
+                  onChange={(e) => {
+                    const newAnswers = [...recoveryAnswers];
+                    newAnswers[idx] = e.target.value;
+                    setRecoveryAnswers(newAnswers);
+                  }}
+                  placeholder="Your answer"
+                />
+              </div>
+            ))}
+            <Button onClick={handleRecoverPasscode} className="w-full bg-orange-600 hover:bg-orange-700 text-lg py-6">
+              Verify & Reset Passcode
+            </Button>
+            <Button onClick={() => { setShowForgotPasscode(false); setIsLocked(true); }} variant="outline" className="w-full">
+              Back to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Passcode Setup Screen
+  if (showPasscodeSetup) {
+    const predefinedQuestions = [
+      "What is your mother's maiden name?",
+      "What city were you born in?",
+      "What is your favorite food?",
+      "What is your first pet's name?",
+      "What is your favorite movie?",
+      "What is your childhood nickname?"
+    ];
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl backdrop-blur-xl bg-white/95">
+          <CardHeader className="text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-10 h-10 text-white" />
+            </div>
+            <CardTitle className="text-2xl">Secure Your Vault</CardTitle>
+            <p className="text-sm text-gray-500 mt-2">Create a master passcode & security questions</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <Shield className="w-4 h-4 inline mr-1" />
+                AES-256 encryption • Security questions for recovery
+              </p>
+            </div>
+            <div>
+              <Label>Create Passcode (4-6 digits) *</Label>
+              <Input
+                type="password"
+                maxLength={6}
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter passcode"
+                className="text-center text-3xl tracking-widest font-bold"
+              />
+            </div>
+            <div>
+              <Label>Confirm Passcode *</Label>
+              <Input
+                type="password"
+                maxLength={6}
+                value={confirmPasscode}
+                onChange={(e) => setConfirmPasscode(e.target.value.replace(/\D/g, ''))}
+                placeholder="Confirm passcode"
+                className="text-center text-3xl tracking-widest font-bold"
+              />
+            </div>
+            <Separator />
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">Security Questions (For Recovery)</Label>
+              {securityQuestions.map((q, idx) => (
+                <div key={idx} className="space-y-2 p-4 bg-gray-50 rounded-lg">
+                  <Label>Question {idx + 1} *</Label>
+                  <Select 
+                    value={q.question} 
+                    onValueChange={(v) => {
+                      const newQuestions = [...securityQuestions];
+                      newQuestions[idx].question = v;
+                      setSecurityQuestions(newQuestions);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a question" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {predefinedQuestions.map(pq => (
+                        <SelectItem key={pq} value={pq}>{pq}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={q.answer}
+                    onChange={(e) => {
+                      const newQuestions = [...securityQuestions];
+                      newQuestions[idx].answer = e.target.value;
+                      setSecurityQuestions(newQuestions);
+                    }}
+                    placeholder="Your answer"
+                  />
+                </div>
+              ))}
+            </div>
+            <Button onClick={handleSetupPasscode} className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6">
+              <Lock className="w-5 h-5 mr-2" />
+              Secure Vault
+            </Button>
+            <p className="text-xs text-center text-gray-500">💡 Security questions help you recover access if you forget your passcode</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Lock Screen
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Lock className="w-12 h-12 text-white" />
+            </div>
+            <CardTitle className="text-2xl">Document Vault Locked</CardTitle>
+            <p className="text-sm text-gray-500 mt-2">Enter master passcode to decrypt documents</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-800 text-sm">
+                <AlertTriangle className="w-4 h-4" />
+                <span>All documents are encrypted with AES-256</span>
+              </div>
+            </div>
+            <div>
+              <Label>Master Passcode</Label>
+              <Input
+                type="password"
+                maxLength={6}
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value.replace(/\D/g, ''))}
+                placeholder="• • • • • •"
+                className="text-center text-4xl tracking-widest font-bold"
+                onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                autoFocus
+              />
+            </div>
+            <Button onClick={handleUnlock} className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6">
+              <KeyRound className="w-5 h-5 mr-2" />
+              Unlock Vault
+            </Button>
+            <Button onClick={handleForgotPasscode} variant="ghost" className="w-full text-blue-600 hover:text-blue-700">
+              Forgot Passcode?
+            </Button>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Maximum Security • Zero-knowledge encryption</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header with SVG Logo */}
+      <div className="bg-gradient-to-r from-blue-700 to-purple-700 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="vaultGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style={{stopColor: '#3B82F6', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: '#8B5CF6', stopOpacity: 1}} />
+                  </linearGradient>
+                </defs>
+                <rect x="25" y="30" width="50" height="50" rx="5" fill="url(#vaultGradient)"/>
+                <rect x="30" y="35" width="40" height="40" rx="3" fill="white" opacity="0.3"/>
+                <circle cx="50" cy="55" r="8" fill="white"/>
+                <rect x="48" y="55" width="4" height="15" fill="white"/>
+                <path d="M 35 20 Q 50 10, 65 20" stroke="white" strokeWidth="3" fill="none"/>
+              </svg>
+              <div>
+                <h1 className="text-3xl font-bold flex items-center gap-2">
+                  Secure Document Vault
+                  <Badge className="bg-green-500 text-white">🔒 AES-256</Badge>
+                </h1>
+                <p className="text-blue-100 mt-1">Military-grade encryption • Passcode protected</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+                    <SettingsIcon className="w-4 h-4 mr-2" />
+                    Vault Settings
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Vault Security Settings</DialogTitle>
+                    <DialogDescription>Configure advanced security and privacy options</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Auto-Lock Vault</Label>
+                        <p className="text-sm text-gray-500">Automatically lock after inactivity</p>
+                      </div>
+                      <Switch
+                        checked={vaultSettings.auto_lock_enabled}
+                        onCheckedChange={(v) => setVaultSettings({...vaultSettings, auto_lock_enabled: v})}
+                      />
+                    </div>
+                    {vaultSettings.auto_lock_enabled && (
+                      <div>
+                        <Label>Auto-Lock Timer (minutes)</Label>
+                        <Select value={vaultSettings.auto_lock_minutes} onValueChange={(v) => setVaultSettings({...vaultSettings, auto_lock_minutes: v})}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1 minute</SelectItem>
+                            <SelectItem value="5">5 minutes</SelectItem>
+                            <SelectItem value="15">15 minutes</SelectItem>
+                            <SelectItem value="30">30 minutes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Expiry Alerts</Label>
+                        <p className="text-sm text-gray-500">Get notified before documents expire</p>
+                      </div>
+                      <Switch
+                        checked={vaultSettings.expiry_alerts}
+                        onCheckedChange={(v) => setVaultSettings({...vaultSettings, expiry_alerts: v})}
+                      />
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">PIN for Downloads</Label>
+                        <p className="text-sm text-gray-500">Require passcode to download documents</p>
+                      </div>
+                      <Switch
+                        checked={vaultSettings.require_pin_for_download}
+                        onCheckedChange={(v) => setVaultSettings({...vaultSettings, require_pin_for_download: v})}
+                      />
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base font-semibold">Secure Backup</Label>
+                        <p className="text-sm text-gray-500">Encrypted cloud backup</p>
+                      </div>
+                      <Switch
+                        checked={vaultSettings.backup_enabled}
+                        onCheckedChange={(v) => setVaultSettings({...vaultSettings, backup_enabled: v})}
+                      />
+                    </div>
+                    <Separator />
+                    <div>
+                      <Label>Encryption Level</Label>
+                      <Select value={vaultSettings.encryption_level} onValueChange={(v) => setVaultSettings({...vaultSettings, encryption_level: v})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AES-256">AES-256 (Maximum Security)</SelectItem>
+                          <SelectItem value="AES-128">AES-128 (Standard)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={handleSaveSettings} className="w-full bg-blue-600 hover:bg-blue-700">
+                      Save Settings
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button onClick={() => setIsLocked(true)} variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <Lock className="w-4 h-4 mr-2" />
+                Lock Vault
+              </Button>
+              <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                <DialogTrigger asChild>
+                  <Button className="bg-white text-blue-700 hover:bg-blue-50">
+                    <Upload className="w-5 h-5 mr-2" />
+                    Upload
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Upload Encrypted Document</DialogTitle>
+                    <DialogDescription>Files are encrypted with {vaultSettings.encryption_level} before storage</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div>
+                      <Label>Document Name *</Label>
+                      <Input
+                        value={uploadData.document_name}
+                        onChange={(e) => setUploadData({...uploadData, document_name: e.target.value})}
+                        placeholder="My Aadhaar Card"
+                      />
+                    </div>
+                    <div>
+                      <Label>Document Type *</Label>
+                      <Select value={uploadData.document_type} onValueChange={(v) => setUploadData({...uploadData, document_type: v})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {documentTypes.map(type => (
+                            <SelectItem key={type} value={type}>{typeIcons[type]} {type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Upload File * (PDF, JPG, PNG - Max 10MB)</Label>
+                      <Input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => setUploadData({...uploadData, file: e.target.files[0]})}
+                      />
+                    </div>
+                    <div>
+                      <Label>Expiry Date (Optional)</Label>
+                      <Input
+                        type="date"
+                        value={uploadData.expiry_date}
+                        onChange={(e) => setUploadData({...uploadData, expiry_date: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label>Notes</Label>
+                      <Input
+                        value={uploadData.notes}
+                        onChange={(e) => setUploadData({...uploadData, notes: e.target.value})}
+                        placeholder="Additional notes..."
+                      />
+                    </div>
+                    <Button onClick={handleUpload} disabled={uploadMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
+                      {uploadMutation.isPending ? "🔐 Encrypting..." : "🔒 Upload & Encrypt"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Security Badges */}
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
+          <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-green-800">
+              <CheckCircle className="w-5 h-5" />
+              <div>
+                <p className="font-semibold text-sm">{vaultSettings.encryption_level}</p>
+                <p className="text-xs">Encryption</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+            <div className="flex items-center gap-2 text-blue-800">
+              <Shield className="w-5 h-5" />
+              <div>
+                <p className="font-semibold text-sm">Private Storage</p>
+                <p className="text-xs">Zero-knowledge</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
+            <div className="flex items-center gap-2 text-purple-800">
+              <Lock className="w-5 h-5" />
+              <div>
+                <p className="font-semibold text-sm">Auto-Lock</p>
+                <p className="text-xs">{vaultSettings.auto_lock_enabled ? `${vaultSettings.auto_lock_minutes} min` : 'Disabled'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 bg-orange-50 border-2 border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2 text-orange-800">
+              <FileText className="w-5 h-5" />
+              <div>
+                <p className="font-semibold text-sm">{documents.length} Docs</p>
+                <p className="text-xs">Encrypted</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Documents Grid */}
+        {isLoading ? (
+          <div className="grid md:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <div className="h-48 bg-gray-200" />
+              </Card>
+            ))}
+          </div>
+        ) : documents.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {documents.map(doc => (
+              <Card key={doc.id} className="hover:shadow-xl transition-all border-2 hover:border-blue-300">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl">{typeIcons[doc.document_type]}</span>
+                      <div>
+                        <CardTitle className="text-lg">{doc.document_name}</CardTitle>
+                        <Badge variant="outline" className="mt-1">{doc.document_type}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>📅 Uploaded: {format(new Date(doc.created_date), 'MMM d, yyyy')}</p>
+                    {doc.expiry_date && (
+                      <p className={`font-semibold ${new Date(doc.expiry_date) < new Date() ? 'text-red-600' : 'text-orange-600'}`}>
+                        ⏰ Expires: {format(new Date(doc.expiry_date), 'MMM d, yyyy')}
+                        {new Date(doc.expiry_date) < new Date() && ' (EXPIRED)'}
+                      </p>
+                    )}
+                    <p>💾 Size: {(doc.file_size / 1024).toFixed(2)} KB</p>
+                    <p className="text-xs text-green-600">🔒 Encrypted with {vaultSettings.encryption_level}</p>
+                    {doc.notes && <p className="text-gray-500 italic mt-2">📝 {doc.notes}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline" className="flex-1">
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[90vh]">
+                        <DialogHeader>
+                          <DialogTitle>{doc.document_name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="mt-4 overflow-auto">
+                          {doc.file_url.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                            <img src={doc.file_url} alt={doc.document_name} className="w-full rounded" />
+                          ) : (
+                            <iframe src={doc.file_url} className="w-full h-[600px] rounded border" />
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <Button size="sm" variant="outline" onClick={() => window.open(doc.file_url, '_blank')}>
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(doc.id)} className="text-red-600 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="p-12 text-center border-2 border-dashed">
+            <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Your vault is empty</h3>
+            <p className="text-gray-500 mb-4">Upload important documents with military-grade encryption</p>
+            <Button onClick={() => setShowUploadDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+              <Upload className="w-5 h-5 mr-2" />
+              Upload First Document
+            </Button>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

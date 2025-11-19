@@ -1,0 +1,234 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Search, Phone, Mail, Clock, ExternalLink, Navigation } from "lucide-react";
+
+export default function LocalOffices() {
+  const [pincode, setPincode] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [searchResults, setSearchResults] = useState([]);
+
+  const { data: offices, isLoading } = useQuery({
+    queryKey: ['local-offices'],
+    queryFn: () => base44.entities.LocalOffice.list(),
+    initialData: []
+  });
+
+  const handleSearch = () => {
+    if (!pincode || pincode.length !== 6) {
+      toast.error("Please enter a valid 6-digit pincode");
+      return;
+    }
+
+    const filtered = offices.filter(office => {
+      const matchesPincode = office.pincode?.toString() === pincode.toString();
+      const matchesType = selectedType === "all" || office.office_type === selectedType;
+      return matchesPincode && matchesType;
+    });
+
+    setSearchResults(filtered);
+    
+    if (filtered.length === 0) {
+      toast.info("No offices found for this pincode. Try a different one.");
+    } else {
+      toast.success(`Found ${filtered.length} office(s) nearby!`);
+    }
+  };
+
+  const officeTypes = [
+    "Aadhaar Kendra",
+    "RTO",
+    "Police Station",
+    "Post Office",
+    "Municipal Office",
+    "Tehsil Office",
+    "Court",
+    "Bank",
+    "Electricity Office",
+    "Water Department"
+  ];
+
+  const typeColors = {
+    "Aadhaar Kendra": "bg-blue-100 text-blue-800",
+    "RTO": "bg-green-100 text-green-800",
+    "Police Station": "bg-red-100 text-red-800",
+    "Post Office": "bg-yellow-100 text-yellow-800",
+    "Municipal Office": "bg-purple-100 text-purple-800",
+    "Tehsil Office": "bg-indigo-100 text-indigo-800",
+    "Court": "bg-gray-100 text-gray-800",
+    "Bank": "bg-orange-100 text-orange-800"
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-4 mb-6">
+            {/* Local Offices SVG Logo */}
+            <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="officeMapGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#10B981', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#14B8A6', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <path d="M 50 25 L 50 80" stroke="url(#officeMapGradient)" strokeWidth="6"/>
+              <circle cx="50" cy="25" r="15" fill="url(#officeMapGradient)"/>
+              <circle cx="50" cy="25" r="8" fill="white"/>
+              <circle cx="50" cy="80" r="6" fill="url(#officeMapGradient)"/>
+              <circle cx="30" cy="50" r="5" fill="white" opacity="0.8"/>
+              <circle cx="70" cy="50" r="5" fill="white" opacity="0.8"/>
+            </svg>
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <MapPin className="w-8 h-8" />
+                Find Local Offices
+              </h1>
+              <p className="text-green-100 mt-1">📍 Locate nearest government offices by pincode</p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Enter Pincode</Label>
+                  <Input
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    placeholder="e.g., 380001"
+                    maxLength={6}
+                    className="text-lg"
+                  />
+                </div>
+                <div>
+                  <Label>Office Type</Label>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {officeTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={handleSearch} className="w-full bg-green-600 hover:bg-green-700">
+                    <Search className="w-5 h-5 mr-2" />
+                    Search
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {searchResults.length > 0 ? (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Found {searchResults.length} office(s) near {pincode}
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {searchResults.map(office => (
+                <Card key={office.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{office.office_name}</CardTitle>
+                        <Badge className={`mt-2 ${typeColors[office.office_type] || 'bg-gray-100'}`}>
+                          {office.office_type}
+                        </Badge>
+                      </div>
+                      <MapPin className="w-6 h-6 text-green-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-start gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                      <p className="text-gray-600">{office.address}, {office.city}, {office.state} - {office.pincode}</p>
+                    </div>
+
+                    {office.phone && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <a href={`tel:${office.phone}`} className="text-blue-600 hover:underline">
+                          {office.phone}
+                        </a>
+                      </div>
+                    )}
+
+                    {office.email && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <a href={`mailto:${office.email}`} className="text-blue-600 hover:underline">
+                          {office.email}
+                        </a>
+                      </div>
+                    )}
+
+                    {office.timings && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600">{office.timings}</span>
+                      </div>
+                    )}
+
+                    {office.services_offered && office.services_offered.length > 0 && (
+                      <div className="pt-3 border-t">
+                        <p className="text-xs font-semibold text-gray-500 mb-2">Services:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {office.services_offered.slice(0, 3).map((service, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">{service}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {office.google_maps_url && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(office.google_maps_url, '_blank')}
+                        className="w-full mt-3"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open in Google Maps
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : pincode ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">No offices found for pincode {pincode}</p>
+              <p className="text-gray-400 mt-2">Try a different pincode or contact support to add offices</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">Enter your pincode to find nearby offices</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}

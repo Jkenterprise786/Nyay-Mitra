@@ -1,0 +1,136 @@
+{
+  "name": "DocumentGuide",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Document name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Certificate",
+        "ID Document",
+        "Legal Document",
+        "Property Document",
+        "Educational Document",
+        "Financial Document",
+        "Other"
+      ],
+      "description": "Type of document"
+    },
+    "state": {
+      "type": "string",
+      "description": "State where document is applicable"
+    },
+    "description": {
+      "type": "string",
+      "description": "Document description and purpose"
+    },
+    "process_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step_number": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "documents_needed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Step-by-step process"
+    },
+    "required_forms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of required forms with download links"
+    },
+    "office_locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "office_name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Government office locations"
+    },
+    "timeline": {
+      "type": "string",
+      "description": "Expected timeline for document processing"
+    },
+    "fees": {
+      "type": "string",
+      "description": "Fees involved"
+    },
+    "common_mistakes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Common mistakes to avoid"
+    },
+    "video_link": {
+      "type": "string",
+      "description": "Video tutorial link"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "state",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "name": "ForumAnswer",
+  "type": "object",
+  "properties": {
+    "question_id": {
+      "type": "string",
+      "description": "Related question ID"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User who posted the answer"
+    },
+    "content": {
+      "type": "string",
+      "description": "Answer content"
+    },
+    "upvotes": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of upvotes"
+    },
+    "downvotes": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of downvotes"
+    },
+    "is_verified_lawyer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is the answerer a verified lawyer"
+    },
+    "is_best_answer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marked as best answer"
+    }
+  },
+  "required": [
+    "question_id",
+    "user_id",
+    "content"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

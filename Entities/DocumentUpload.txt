@@ -1,0 +1,120 @@
+{
+  "name": "DocumentUpload",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "Legal Document",
+        "Government Form",
+        "Contract",
+        "Agreement",
+        "Notice",
+        "Certificate",
+        "Other"
+      ],
+      "description": "Type of document"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded file URL"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "analysis_status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Processing",
+        "Completed",
+        "Failed"
+      ],
+      "default": "Pending",
+      "description": "Analysis status"
+    },
+    "analysis_result": {
+      "type": "object",
+      "description": "AI analysis result",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "key_clauses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendations": {
+          "type": "string"
+        },
+        "translation": {
+          "type": "string"
+        }
+      }
+    },
+    "language": {
+      "type": "string",
+      "description": "Detected document language"
+    }
+  },
+  "required": [
+    "user_id",
+    "document_type",
+    "file_url",
+    "file_name"
+  ],
+  "rls": {
+    "create": {
+      "user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

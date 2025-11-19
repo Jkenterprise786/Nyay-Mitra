@@ -1,0 +1,104 @@
+{
+  "name": "CaseLaw",
+  "type": "object",
+  "properties": {
+    "case_name": {
+      "type": "string",
+      "description": "Name of the case"
+    },
+    "case_number": {
+      "type": "string",
+      "description": "Case number"
+    },
+    "court": {
+      "type": "string",
+      "enum": [
+        "Supreme Court",
+        "High Court",
+        "District Court",
+        "Consumer Court",
+        "Other"
+      ],
+      "description": "Court name"
+    },
+    "year": {
+      "type": "number",
+      "description": "Year of judgment"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Property",
+        "Family",
+        "Consumer",
+        "Criminal",
+        "Civil",
+        "Constitutional",
+        "Labor",
+        "Tax",
+        "Corporate"
+      ],
+      "description": "Case category"
+    },
+    "facts": {
+      "type": "string",
+      "description": "Brief facts of the case"
+    },
+    "judgment_summary": {
+      "type": "string",
+      "description": "Summary of the judgment"
+    },
+    "key_points": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key legal points"
+    },
+    "relevance_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Relevant tags for search"
+    },
+    "citation": {
+      "type": "string",
+      "description": "Legal citation"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English"
+    }
+  },
+  "required": [
+    "case_name",
+    "court",
+    "year",
+    "category"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

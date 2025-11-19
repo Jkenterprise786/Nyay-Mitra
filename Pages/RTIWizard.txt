@@ -1,0 +1,436 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Send, Download, Copy, CheckCircle, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+export default function RTIWizard() {
+  const [user, setUser] = useState(null);
+  const [step, setStep] = useState(1);
+  const [applicationType, setApplicationType] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+    email: "",
+    phone: "",
+    department: "",
+    information_requested: "",
+    purpose: "",
+    grievance_type: "",
+    grievance_details: "",
+    desired_action: ""
+  });
+  const [generatedDocument, setGeneratedDocument] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        if (currentUser) {
+          setFormData(prev => ({
+            ...prev,
+            name: currentUser.full_name || "",
+            email: currentUser.email || "",
+            phone: currentUser.phone || "",
+            address: currentUser.address || ""
+          }));
+        }
+      } catch (error) {
+        console.log("User not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const generateDocument = async () => {
+    setIsGenerating(true);
+    try {
+      let prompt = "";
+      const currentDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      if (applicationType === "rti") {
+        prompt = `Generate a professional RTI (Right to Information) application in proper Indian legal format.
+
+Applicant Details:
+Name: ${formData.name}
+Address: ${formData.address}
+Email: ${formData.email}
+Phone: ${formData.phone}
+
+Department/Public Authority: ${formData.department}
+Information Requested: ${formData.information_requested}
+Purpose: ${formData.purpose}
+
+Date: ${currentDate}
+
+Format the RTI application with:
+1. Proper RTI application header
+2. "To" section with Public Information Officer address
+3. Subject line
+4. Body with clear information request
+5. Details of fee payment (mention ₹10 application fee)
+6. Request for information in prescribed time limit (30 days as per RTI Act 2005)
+7. Contact details
+8. Proper signature block
+
+Make it professional and compliant with RTI Act 2005.`;
+      } else if (applicationType === "grievance") {
+        prompt = `Generate a professional Grievance/Complaint application in Indian administrative format.
+
+Complainant Details:
+Name: ${formData.name}
+Address: ${formData.address}
+Email: ${formData.email}
+Phone: ${formData.phone}
+
+Grievance Type: ${formData.grievance_type}
+Grievance Details: ${formData.grievance_details}
+Desired Action: ${formData.desired_action}
+
+Date: ${currentDate}
+
+Format the grievance application with:
+1. Proper complaint header
+2. "To" section (relevant authority)
+3. Subject line
+4. Detailed grievance description
+5. Supporting facts/timeline
+6. Relief/action sought
+7. Request for acknowledgment and timely resolution
+8. Contact details
+9. Proper signature block
+
+Make it formal and actionable.`;
+      } else {
+        prompt = `Generate a professional Consumer Complaint application as per Consumer Protection Act 2019.
+
+Consumer Details:
+Name: ${formData.name}
+Address: ${formData.address}
+Email: ${formData.email}
+Phone: ${formData.phone}
+
+Complaint Details: ${formData.grievance_details}
+Desired Relief: ${formData.desired_action}
+
+Date: ${currentDate}
+
+Format with:
+1. Consumer Forum header (mention appropriate forum based on claim amount)
+2. Complainant details
+3. Opposite party details
+4. Nature of complaint
+5. Facts of the case
+6. Relief sought
+7. List of documents (if any)
+8. Verification clause
+9. Proper signature block
+
+Make it compliant with Consumer Protection Act 2019.`;
+      }
+
+      const document = await base44.integrations.Core.InvokeLLM({ prompt });
+      setGeneratedDocument(document);
+      toast.success("Document generated successfully!");
+    } catch (error) {
+      toast.error("Failed to generate document");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedDocument);
+    toast.success("Copied to clipboard!");
+  };
+
+  const downloadDocument = () => {
+    const element = document.createElement("a");
+    const file = new Blob([generatedDocument], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${applicationType.toUpperCase()}_${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success("Document downloaded!");
+  };
+
+  const resetForm = () => {
+    setStep(1);
+    setApplicationType("");
+    setFormData({
+      name: user?.full_name || "",
+      address: user?.address || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      department: "",
+      information_requested: "",
+      purpose: "",
+      grievance_type: "",
+      grievance_details: "",
+      desired_action: ""
+    });
+    setGeneratedDocument(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-lg rounded-2xl flex items-center justify-center">
+              <Send className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                <Sparkles className="w-8 h-8" />
+                RTI & Grievance Wizard
+              </h1>
+              <p className="text-green-100 mt-1">Step-by-step tool to generate RTI applications and complaints</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {!generatedDocument ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {step === 1 ? "Select Application Type" : step === 2 ? "Your Details" : "Application Details"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {step === 1 && (
+                <div>
+                  <Label>What would you like to file?</Label>
+                  <RadioGroup value={applicationType} onValueChange={setApplicationType} className="mt-4 space-y-3">
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-green-50 cursor-pointer">
+                      <RadioGroupItem value="rti" id="rti" />
+                      <Label htmlFor="rti" className="cursor-pointer flex-1">
+                        <div>
+                          <p className="font-semibold">RTI Application</p>
+                          <p className="text-sm text-gray-600">File a Right to Information request to any public authority</p>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-green-50 cursor-pointer">
+                      <RadioGroupItem value="grievance" id="grievance" />
+                      <Label htmlFor="grievance" className="cursor-pointer flex-1">
+                        <div>
+                          <p className="font-semibold">Grievance/Complaint</p>
+                          <p className="text-sm text-gray-600">File a complaint against government department or service</p>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-green-50 cursor-pointer">
+                      <RadioGroupItem value="consumer" id="consumer" />
+                      <Label htmlFor="consumer" className="cursor-pointer flex-1">
+                        <div>
+                          <p className="font-semibold">Consumer Complaint</p>
+                          <p className="text-sm text-gray-600">File a consumer complaint for defective products/services</p>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  <Button
+                    onClick={() => setStep(2)}
+                    disabled={!applicationType}
+                    className="w-full mt-6 bg-green-600 hover:bg-green-700"
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Full Name *</Label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label>Phone *</Label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label>Complete Address *</Label>
+                    <Textarea
+                      value={formData.address}
+                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+                    <Button onClick={() => setStep(3)} className="flex-1 bg-green-600 hover:bg-green-700">Next</Button>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="space-y-4">
+                  {applicationType === "rti" && (
+                    <>
+                      <div>
+                        <Label>Department/Public Authority *</Label>
+                        <Input
+                          value={formData.department}
+                          onChange={(e) => setFormData({...formData, department: e.target.value})}
+                          placeholder="e.g., Municipal Corporation, Police Department"
+                        />
+                      </div>
+                      <div>
+                        <Label>Information Requested *</Label>
+                        <Textarea
+                          value={formData.information_requested}
+                          onChange={(e) => setFormData({...formData, information_requested: e.target.value})}
+                          placeholder="Clearly describe what information you want..."
+                          rows={5}
+                        />
+                      </div>
+                      <div>
+                        <Label>Purpose (Optional)</Label>
+                        <Input
+                          value={formData.purpose}
+                          onChange={(e) => setFormData({...formData, purpose: e.target.value})}
+                          placeholder="Why do you need this information?"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {(applicationType === "grievance" || applicationType === "consumer") && (
+                    <>
+                      {applicationType === "grievance" && (
+                        <div>
+                          <Label>Grievance Type</Label>
+                          <Select value={formData.grievance_type} onValueChange={(v) => setFormData({...formData, grievance_type: v})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Service Delay">Service Delay</SelectItem>
+                              <SelectItem value="Corruption">Corruption</SelectItem>
+                              <SelectItem value="Poor Service">Poor Service</SelectItem>
+                              <SelectItem value="Document Issue">Document Issue</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      <div>
+                        <Label>{applicationType === "consumer" ? "Complaint Details" : "Grievance Details"} *</Label>
+                        <Textarea
+                          value={formData.grievance_details}
+                          onChange={(e) => setFormData({...formData, grievance_details: e.target.value})}
+                          placeholder="Describe the issue in detail..."
+                          rows={6}
+                        />
+                      </div>
+                      <div>
+                        <Label>Desired Action/Relief *</Label>
+                        <Textarea
+                          value={formData.desired_action}
+                          onChange={(e) => setFormData({...formData, desired_action: e.target.value})}
+                          placeholder="What action do you want taken?"
+                          rows={3}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                    <Button
+                      onClick={generateDocument}
+                      disabled={isGenerating}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate Document
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                      Document Generated
+                    </CardTitle>
+                    <p className="text-gray-600 mt-1">{applicationType.toUpperCase()} Application</p>
+                  </div>
+                  <Button variant="outline" onClick={resetForm}>Generate New</Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-white rounded-lg p-6 border-2 border-gray-200">
+                  <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 leading-relaxed">
+                    {generatedDocument}
+                  </pre>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <Button onClick={copyToClipboard} variant="outline">
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy to Clipboard
+                  </Button>
+                  <Button onClick={downloadDocument} className="bg-green-600 hover:bg-green-700 text-white">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>Next Steps:</strong> Print this document, sign it, and submit to the relevant authority via registered post or hand delivery. Keep a copy for your records.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

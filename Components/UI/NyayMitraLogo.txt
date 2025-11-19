@@ -1,0 +1,71 @@
+import React from "react";
+
+export default function NyayMitraLogo({ size = "w-16 h-16", showText = false }) {
+  return (
+    <div className="flex items-center gap-3">
+      <svg className={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="nyayMainGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style={{stopColor: '#FF9933', stopOpacity: 1}} />
+            <stop offset="50%" style={{stopColor: '#FFFFFF', stopOpacity: 1}} />
+            <stop offset="100%" style={{stopColor: '#138808', stopOpacity: 1}} />
+          </linearGradient>
+          <linearGradient id="scaleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style={{stopColor: '#FFD700', stopOpacity: 1}} />
+            <stop offset="100%" style={{stopColor: '#FFA500', stopOpacity: 1}} />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Circle with tricolor gradient */}
+        <circle cx="50" cy="50" r="45" fill="url(#nyayMainGradient)" opacity="0.9"/>
+        
+        {/* Inner white circle */}
+        <circle cx="50" cy="50" r="38" fill="white" opacity="0.95"/>
+        
+        {/* Ashoka Chakra inspired design */}
+        <circle cx="50" cy="50" r="32" fill="none" stroke="#000080" strokeWidth="1.5"/>
+        
+        {/* Justice Scale */}
+        <g filter="url(#glow)">
+          {/* Center pillar */}
+          <rect x="48" y="35" width="4" height="30" fill="url(#scaleGradient)"/>
+          
+          {/* Cross bar */}
+          <rect x="35" y="35" width="30" height="3" rx="1.5" fill="url(#scaleGradient)"/>
+          
+          {/* Left scale pan */}
+          <ellipse cx="38" cy="40" rx="6" ry="3" fill="url(#scaleGradient)"/>
+          <path d="M 32 40 L 38 43 L 44 40" stroke="url(#scaleGradient)" strokeWidth="1.5" fill="none"/>
+          
+          {/* Right scale pan */}
+          <ellipse cx="62" cy="40" rx="6" ry="3" fill="url(#scaleGradient)"/>
+          <path d="M 56 40 L 62 43 L 68 40" stroke="url(#scaleGradient)" strokeWidth="1.5" fill="none"/>
+          
+          {/* Base */}
+          <ellipse cx="50" cy="65" rx="12" ry="3" fill="url(#scaleGradient)"/>
+        </g>
+        
+        {/* Stars for decoration */}
+        <circle cx="30" cy="25" r="2" fill="#FF9933" opacity="0.6"/>
+        <circle cx="70" cy="25" r="2" fill="#FF9933" opacity="0.6"/>
+        <circle cx="30" cy="75" r="2" fill="#138808" opacity="0.6"/>
+        <circle cx="70" cy="75" r="2" fill="#138808" opacity="0.6"/>
+      </svg>
+      {showText && (
+        <div>
+          <h2 className="font-bold text-xl bg-gradient-to-r from-orange-600 via-white to-green-600 bg-clip-text text-transparent">
+            Nyay Mitra
+          </h2>
+          <p className="text-xs text-gray-600">Your Legal Companion</p>
+        </div>
+      )}
+    </div>
+  );
+}

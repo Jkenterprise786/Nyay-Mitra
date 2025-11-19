@@ -1,0 +1,97 @@
+{
+  "name": "JobOpportunity",
+  "type": "object",
+  "properties": {
+    "job_title": {
+      "type": "string",
+      "description": "Job title"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Organization/Department name"
+    },
+    "job_type": {
+      "type": "string",
+      "enum": [
+        "Government Job",
+        "Apprenticeship",
+        "Internship",
+        "Contract",
+        "Permanent"
+      ],
+      "description": "Type of job"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Central Government",
+        "State Government",
+        "PSU",
+        "Defense",
+        "Railways",
+        "Banking",
+        "Teaching",
+        "Other"
+      ],
+      "description": "Job category"
+    },
+    "location": {
+      "type": "string",
+      "description": "Job location"
+    },
+    "vacancies": {
+      "type": "number",
+      "description": "Number of vacancies"
+    },
+    "qualification": {
+      "type": "string",
+      "description": "Required qualification"
+    },
+    "age_limit": {
+      "type": "string",
+      "description": "Age limit"
+    },
+    "salary": {
+      "type": "string",
+      "description": "Salary range"
+    },
+    "description": {
+      "type": "string",
+      "description": "Job description"
+    },
+    "application_start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Application start date"
+    },
+    "application_end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Application deadline"
+    },
+    "exam_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Exam date if applicable"
+    },
+    "application_link": {
+      "type": "string",
+      "description": "Application URL"
+    },
+    "notification_pdf": {
+      "type": "string",
+      "description": "Official notification PDF URL"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether job is still open"
+    }
+  },
+  "required": [
+    "job_title",
+    "organization",
+    "job_type",
+    "category"
+  ]
+}

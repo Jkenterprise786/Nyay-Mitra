@@ -1,0 +1,112 @@
+{
+  "name": "GovernmentService",
+  "type": "object",
+  "properties": {
+    "service_name": {
+      "type": "string",
+      "description": "Name of the service"
+    },
+    "department": {
+      "type": "string",
+      "description": "Government department"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Certificates",
+        "Licenses",
+        "Registration",
+        "Pension",
+        "Tax",
+        "Property",
+        "Legal",
+        "Healthcare",
+        "Education",
+        "Utilities",
+        "Other"
+      ],
+      "description": "Service category"
+    },
+    "description": {
+      "type": "string",
+      "description": "Service description"
+    },
+    "eligibility": {
+      "type": "string",
+      "description": "Who can apply"
+    },
+    "required_documents": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Required documents"
+    },
+    "process_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Steps to avail service"
+    },
+    "fees": {
+      "type": "string",
+      "description": "Service fees"
+    },
+    "processing_time": {
+      "type": "string",
+      "description": "Expected processing time"
+    },
+    "online_available": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether available online"
+    },
+    "portal_url": {
+      "type": "string",
+      "description": "Online portal URL"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "contact_details": {
+      "type": "object",
+      "properties": {
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "service_name",
+    "department",
+    "category",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

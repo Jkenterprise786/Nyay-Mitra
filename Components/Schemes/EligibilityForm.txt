@@ -1,0 +1,159 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X, CheckCircle } from "lucide-react";
+
+export default function EligibilityForm({ onSubmit, onCancel }) {
+  const [formData, setFormData] = useState({
+    age: "",
+    state: "",
+    occupation: "",
+    income: "",
+    social_category: "",
+    education: ""
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      age: parseInt(formData.age) || 0,
+      income: parseInt(formData.income) || 0
+    });
+  };
+
+  const states = ["Andhra Pradesh", "Gujarat", "Maharashtra", "Tamil Nadu", "Karnataka", "Uttar Pradesh", "West Bengal", "Rajasthan"];
+  const occupations = ["Student", "Farmer", "Government Employee", "Private Employee", "Self Employed", "Business Owner", "Retired", "Unemployed"];
+  const socialCategories = ["General", "OBC", "SC", "ST", "EWS"];
+  const educationLevels = ["Below 10th", "10th Pass", "12th Pass", "Graduate", "Post Graduate", "Professional Degree"];
+
+  return (
+    <Card className="mb-8 border-2 border-orange-200">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl">Eligibility Questionnaire</CardTitle>
+            <CardDescription>Help us find the best schemes for you</CardDescription>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+      </CardHeader>
+
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="age">Age *</Label>
+              <Input
+                id="age"
+                type="number"
+                placeholder="Enter your age"
+                value={formData.age}
+                onChange={(e) => setFormData({...formData, age: e.target.value})}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="state">State *</Label>
+              <Select 
+                value={formData.state} 
+                onValueChange={(value) => setFormData({...formData, state: value})}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your state" />
+                </SelectTrigger>
+                <SelectContent>
+                  {states.map(state => (
+                    <SelectItem key={state} value={state}>{state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="occupation">Occupation *</Label>
+              <Select 
+                value={formData.occupation} 
+                onValueChange={(value) => setFormData({...formData, occupation: value})}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your occupation" />
+                </SelectTrigger>
+                <SelectContent>
+                  {occupations.map(occ => (
+                    <SelectItem key={occ} value={occ}>{occ}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="income">Annual Income (₹) *</Label>
+              <Input
+                id="income"
+                type="number"
+                placeholder="Enter annual income"
+                value={formData.income}
+                onChange={(e) => setFormData({...formData, income: e.target.value})}
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="social_category">Social Category *</Label>
+              <Select 
+                value={formData.social_category} 
+                onValueChange={(value) => setFormData({...formData, social_category: value})}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {socialCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="education">Education Level</Label>
+              <Select 
+                value={formData.education} 
+                onValueChange={(value) => setFormData({...formData, education: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select education" />
+                </SelectTrigger>
+                <SelectContent>
+                  {educationLevels.map(edu => (
+                    <SelectItem key={edu} value={edu}>{edu}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" className="gradient-saffron text-white">
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Find Matching Schemes
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}

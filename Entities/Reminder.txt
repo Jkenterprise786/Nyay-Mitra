@@ -1,0 +1,68 @@
+{
+  "name": "Reminder",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "Reminder title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Reminder details"
+    },
+    "reminder_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When to remind"
+    },
+    "reminder_type": {
+      "type": "string",
+      "enum": [
+        "Court Hearing",
+        "Document Renewal",
+        "Application Deadline",
+        "Consultation",
+        "Payment Due",
+        "Other"
+      ],
+      "description": "Type of reminder"
+    },
+    "is_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether reminder is completed"
+    },
+    "notification_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether notification was sent"
+    },
+    "related_entity_id": {
+      "type": "string",
+      "description": "Related scheme/consultation ID"
+    }
+  },
+  "required": [
+    "user_id",
+    "title",
+    "reminder_date"
+  ],
+  "rls": {
+    "create": {
+      "user_id": "{{user.id}}"
+    },
+    "read": {
+      "user_id": "{{user.id}}"
+    },
+    "update": {
+      "user_id": "{{user.id}}"
+    },
+    "delete": {
+      "user_id": "{{user.id}}"
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "name": "VideoTutorial",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Video title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Video description"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "How to Apply",
+        "Document Guide",
+        "Legal Rights",
+        "Government Schemes",
+        "Tax & Finance",
+        "Property Matters",
+        "Consumer Rights",
+        "Other"
+      ],
+      "description": "Video category"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "YouTube or video URL"
+    },
+    "thumbnail_url": {
+      "type": "string",
+      "description": "Thumbnail image"
+    },
+    "duration": {
+      "type": "string",
+      "description": "Video duration (e.g., 5:30)"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English",
+      "description": "Video language"
+    },
+    "audio_url": {
+      "type": "string",
+      "description": "Audio-only version URL"
+    },
+    "transcript": {
+      "type": "string",
+      "description": "Video transcript"
+    },
+    "views": {
+      "type": "number",
+      "default": 0,
+      "description": "View count"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Search tags"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Featured video"
+    }
+  },
+  "required": [
+    "title",
+    "category",
+    "video_url"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

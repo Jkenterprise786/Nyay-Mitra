@@ -1,0 +1,106 @@
+{
+  "name": "VerifiedAgent",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Agent name"
+    },
+    "agent_type": {
+      "type": "string",
+      "enum": [
+        "Document Writer",
+        "Notary",
+        "CSC Center",
+        "e-Mitra",
+        "Typing Service",
+        "Translation Service",
+        "Other"
+      ],
+      "description": "Type of agent"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact number"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email"
+    },
+    "address": {
+      "type": "string",
+      "description": "Office address"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "state": {
+      "type": "string",
+      "description": "State"
+    },
+    "pincode": {
+      "type": "string",
+      "description": "Pincode"
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Services offered"
+    },
+    "pricing": {
+      "type": "string",
+      "description": "Pricing information"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Verification status"
+    },
+    "verification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of verification"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Average rating"
+    },
+    "review_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of reviews"
+    },
+    "timings": {
+      "type": "string",
+      "description": "Operating hours"
+    }
+  },
+  "required": [
+    "name",
+    "agent_type",
+    "phone",
+    "city",
+    "state"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

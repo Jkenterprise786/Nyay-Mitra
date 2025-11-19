@@ -1,0 +1,265 @@
+
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Library, Search, Scale, Calendar, BookOpen, Gavel } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
+export default function CaseLawFinder() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCourt, setSelectedCourt] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const { data: caseLaws, isLoading } = useQuery({
+    queryKey: ['case-laws'],
+    queryFn: () => base44.entities.CaseLaw.list('-year'),
+    initialData: []
+  });
+
+  const filteredCases = caseLaws.filter(caselaw => {
+    const matchesSearch = caselaw.case_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         caselaw.facts?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         caselaw.relevance_tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCourt = selectedCourt === "all" || caselaw.court === selectedCourt;
+    const matchesCategory = selectedCategory === "all" || caselaw.category === selectedCategory;
+    
+    return matchesSearch && matchesCourt && matchesCategory;
+  });
+
+  const courts = ["Supreme Court", "High Court", "District Court", "Consumer Court"];
+  const categories = ["Property", "Family", "Consumer", "Criminal", "Civil", "Constitutional", "Labor", "Tax", "Corporate"];
+
+  const courtColors = {
+    "Supreme Court": "bg-red-100 text-red-800 border-red-200",
+    "High Court": "bg-blue-100 text-blue-800 border-blue-200",
+    "District Court": "bg-green-100 text-green-800 border-green-200",
+    "Consumer Court": "bg-purple-100 text-purple-800 border-purple-200"
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with SVG Logo */}
+      <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Case Law SVG Logo */}
+            <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="caseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#14B8A6', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#0D9488', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <rect x="25" y="20" width="50" height="60" rx="3" fill="url(#caseGradient)"/>
+              <rect x="30" y="25" width="40" height="50" fill="white" opacity="0.9"/>
+              <line x1="35" y1="32" x2="65" y2="32" stroke="#0D9488" strokeWidth="2"/>
+              <line x1="35" y1="40" x2="65" y2="40" stroke="#0D9488" strokeWidth="2"/>
+              <line x1="35" y1="48" x2="60" y2="48" stroke="#0D9488" strokeWidth="2"/>
+              <line x1="35" y1="56" x2="65" y2="56" stroke="#0D9488" strokeWidth="2"/>
+              <circle cx="50" cy="65" r="5" fill="#14B8A6"/>
+            </svg>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                <Gavel className="w-8 h-8" />
+                Case Law Finder
+              </h1>
+              <p className="text-teal-100 mt-1">Search landmark Indian court judgments & precedents</p>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <p className="text-teal-50 text-sm">
+              🏛 Find relevant case precedents and understand how courts have ruled on similar issues
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <Label htmlFor="search">Search Cases</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    placeholder="Search by case name, facts, or tags..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Court</Label>
+                <Select value={selectedCourt} onValueChange={setSelectedCourt}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Courts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Courts</SelectItem>
+                    {courts.map(court => (
+                      <SelectItem key={court} value={court}>{court}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        <div className="mb-4">
+          <p className="text-gray-600">
+            Found <span className="font-semibold text-gray-900">{filteredCases.length}</span> cases
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="grid md:grid-cols-2 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-20 bg-gray-200 rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredCases.length > 0 ? (
+          <div className="grid md:grid-cols-2 gap-6">
+            {filteredCases.map(caselaw => (
+              <Dialog key={caselaw.id}>
+                <DialogTrigger asChild>
+                  <Card className="cursor-pointer hover:shadow-lg transition-all">
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <Badge className={`${courtColors[caselaw.court]} border`}>
+                          {caselaw.court}
+                        </Badge>
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {caselaw.year}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-lg">{caselaw.case_name}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {caselaw.facts}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge className="bg-gray-100 text-gray-800">
+                          {caselaw.category}
+                        </Badge>
+                        {caselaw.relevance_tags?.slice(0, 2).map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl">{caselaw.case_name}</DialogTitle>
+                    <div className="flex gap-2 mt-2">
+                      <Badge className={courtColors[caselaw.court]}>
+                        {caselaw.court}
+                      </Badge>
+                      <Badge variant="outline">{caselaw.year}</Badge>
+                      <Badge className="bg-gray-100 text-gray-800">{caselaw.category}</Badge>
+                    </div>
+                  </DialogHeader>
+
+                  <div className="space-y-6 mt-4">
+                    {caselaw.citation && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Citation</h3>
+                        <p className="text-gray-700 font-mono text-sm bg-gray-50 p-3 rounded">
+                          {caselaw.citation}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Facts of the Case</h3>
+                      <p className="text-gray-600 leading-relaxed">{caselaw.facts}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Judgment Summary</h3>
+                      <p className="text-gray-600 leading-relaxed">{caselaw.judgment_summary}</p>
+                    </div>
+
+                    {caselaw.key_points && caselaw.key_points.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Key Legal Points</h3>
+                        <ul className="space-y-2">
+                          {caselaw.key_points.map((point, index) => (
+                            <li key={index} className="flex gap-2">
+                              <Scale className="w-4 h-4 text-teal-600 flex-shrink-0 mt-1" />
+                              <span className="text-gray-600">{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {caselaw.relevance_tags && caselaw.relevance_tags.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Relevant Tags</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {caselaw.relevance_tags.map((tag, index) => (
+                            <Badge key={index} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Library className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No cases found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

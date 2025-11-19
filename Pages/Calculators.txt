@@ -1,0 +1,658 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Calculator, DollarSign, Home, TrendingUp, Award, Info } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+export default function Calculators() {
+  const [activeTab, setActiveTab] = useState("income-tax");
+
+  // PPF Calculator
+  const [ppfAnnual, setPpfAnnual] = useState("");
+  const [ppfYears, setPpfYears] = useState("15");
+  const [ppfResult, setPpfResult] = useState(null);
+
+  const calculatePPF = () => {
+    const annual = parseFloat(ppfAnnual);
+    const years = parseFloat(ppfYears);
+    const rate = 0.071; // 7.1% current rate
+    
+    let maturityAmount = 0;
+    for (let i = 1; i <= years; i++) {
+      maturityAmount = (maturityAmount + annual) * (1 + rate);
+    }
+    
+    const totalInvestment = annual * years;
+    const totalInterest = maturityAmount - totalInvestment;
+    
+    setPpfResult({ maturityAmount, totalInvestment, totalInterest });
+    toast.success("PPF maturity calculated!");
+  };
+
+  // FD Calculator
+  const [fdPrincipal, setFdPrincipal] = useState("");
+  const [fdRate, setFdRate] = useState("6.5");
+  const [fdMonths, setFdMonths] = useState("12");
+  const [fdResult, setFdResult] = useState(null);
+
+  const calculateFD = () => {
+    const principal = parseFloat(fdPrincipal);
+    const rate = parseFloat(fdRate) / 100;
+    const months = parseFloat(fdMonths);
+    
+    const maturity = principal * Math.pow(1 + rate / 4, (months / 12) * 4);
+    const interest = maturity - principal;
+    
+    setFdResult({ maturity, interest });
+    toast.success("FD maturity calculated!");
+  };
+
+  // Income Tax Calculator
+  const [taxIncome, setTaxIncome] = useState("");
+  const [taxRegime, setTaxRegime] = useState("new");
+  const [taxResult, setTaxResult] = useState(null);
+
+  const calculateIncomeTax = () => {
+    const income = parseFloat(taxIncome);
+    if (!income || income <= 0) {
+      toast.error("Please enter valid income");
+      return;
+    }
+    
+    let oldTax = 0, newTax = 0;
+    
+    // Old Tax Regime (FY 2023-24)
+    if (income <= 250000) oldTax = 0;
+    else if (income <= 500000) oldTax = (income - 250000) * 0.05;
+    else if (income <= 1000000) oldTax = 12500 + (income - 500000) * 0.20;
+    else oldTax = 112500 + (income - 1000000) * 0.30;
+    
+    // New Tax Regime 2.0 (FY 2024-25)
+    if (income <= 300000) newTax = 0;
+    else if (income <= 700000) newTax = (income - 300000) * 0.05;
+    else if (income <= 1000000) newTax = 20000 + (income - 700000) * 0.10;
+    else if (income <= 1200000) newTax = 50000 + (income - 1000000) * 0.15;
+    else if (income <= 1500000) newTax = 80000 + (income - 1200000) * 0.20;
+    else newTax = 140000 + (income - 1500000) * 0.30;
+    
+    const selectedTax = taxRegime === "new" ? newTax : oldTax;
+    const savings = oldTax - newTax;
+    
+    setTaxResult({ oldTax, newTax, selectedTax, savings, netIncome: income - selectedTax });
+    toast.success("Tax calculated with Tax 2.0 rates!");
+  };
+
+  // EMI Calculator
+  const [principal, setPrincipal] = useState("");
+  const [rate, setRate] = useState("");
+  const [tenure, setTenure] = useState("");
+  const [emiResult, setEmiResult] = useState(null);
+
+  const calculateEMI = () => {
+    const P = parseFloat(principal);
+    const r = parseFloat(rate) / 12 / 100;
+    const n = parseFloat(tenure) * 12;
+    
+    if (!P || !r || !n || P <= 0 || r <= 0 || n <= 0) {
+      toast.error("Please enter valid values");
+      return;
+    }
+    
+    const emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    const totalAmount = emi * n;
+    const totalInterest = totalAmount - P;
+    
+    setEmiResult({ emi, totalAmount, totalInterest });
+    toast.success("EMI calculated!");
+  };
+
+  // Property Tax Calculator
+  const [propertyValue, setPropertyValue] = useState("");
+  const [propertyState, setPropertyState] = useState("Gujarat");
+  const [propertyResult, setPropertyResult] = useState(null);
+
+  const calculateProperty = () => {
+    const value = parseFloat(propertyValue);
+    if (!value || value <= 0) {
+      toast.error("Please enter valid property value");
+      return;
+    }
+    
+    const stampDutyRates = {
+      "Gujarat": { male: 0.049, female: 0.049, joint: 0.049 },
+      "Maharashtra": { male: 0.06, female: 0.05, joint: 0.055 },
+      "Karnataka": { male: 0.05, female: 0.05, joint: 0.05 },
+      "Delhi": { male: 0.06, female: 0.04, joint: 0.05 }
+    };
+    
+    const rates = stampDutyRates[propertyState] || { male: 0.05, female: 0.05, joint: 0.05 };
+    const stampDuty = value * rates.male;
+    const registrationFee = value * 0.01;
+    const total = stampDuty + registrationFee;
+    
+    setPropertyResult({ stampDuty, registrationFee, total, rates, value });
+    toast.success("Property fees calculated!");
+  };
+
+  // Gratuity Calculator
+  const [lastSalary, setLastSalary] = useState("");
+  const [yearsOfService, setYearsOfService] = useState("");
+  const [gratuityResult, setGratuityResult] = useState(null);
+
+  const calculateGratuity = () => {
+    const salary = parseFloat(lastSalary);
+    const years = parseFloat(yearsOfService);
+    
+    if (!salary || !years || salary <= 0 || years <= 0) {
+      toast.error("Please enter valid values");
+      return;
+    }
+    
+    const gratuity = (salary * years * 15) / 26;
+    const maxGratuity = 2000000;
+    const finalGratuity = Math.min(gratuity, maxGratuity);
+    
+    setGratuityResult({ gratuity: finalGratuity, isCapped: gratuity > maxGratuity });
+    toast.success("Gratuity calculated!");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header with SVG Logo */}
+      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-4 mb-6">
+            {/* Calculator SVG Logo */}
+            <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="calcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#10B981', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#14B8A6', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <rect x="25" y="15" width="50" height="70" rx="8" fill="url(#calcGradient)"/>
+              <rect x="30" y="22" width="40" height="15" rx="3" fill="white" opacity="0.9"/>
+              {[0, 1, 2].map(row => 
+                [0, 1, 2].map(col => (
+                  <rect key={`${row}-${col}`} x={32 + col * 13} y={45 + row * 10} width="10" height="7" rx="2" fill="white" opacity="0.8"/>
+                ))
+              )}
+            </svg>
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Calculator className="w-8 h-8" />
+                Financial Calculators
+              </h1>
+              <p className="text-green-100 mt-1">💰 Latest Tax 2.0 rates • Gujarat & India • PPF • GST calculators</p>
+            </div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <div className="grid md:grid-cols-4 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                <span>Tax 2.0 (2024-25)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                <span>EMI Calculator</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Home className="w-5 h-5" />
+                <span>Property Fees</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5" />
+                <span>Gratuity & More</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-8">
+            <TabsTrigger value="income-tax">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Income Tax
+            </TabsTrigger>
+            <TabsTrigger value="emi">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Loan EMI
+            </TabsTrigger>
+            <TabsTrigger value="property">
+              <Home className="w-4 h-4 mr-2" />
+              Property Fee
+            </TabsTrigger>
+            <TabsTrigger value="gratuity">
+              <Award className="w-4 h-4 mr-2" />
+              Gratuity
+            </TabsTrigger>
+            <TabsTrigger value="ppf">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              PPF & FD
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="income-tax">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-green-600" />
+                      Income Tax Calculator (Tax 2.0 - FY 2024-25)
+                    </CardTitle>
+                    <CardDescription>Compare Old vs New tax regime with latest rates</CardDescription>
+                  </div>
+                  <Badge className="bg-green-600 text-white">Updated 2024-25</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                  <div className="flex gap-2">
+                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-900">
+                      <strong>New Tax 2.0 Benefits:</strong> Increased basic exemption to ₹3 lakh, lower rates up to ₹12 lakh income
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Annual Income (₹)</Label>
+                    <Input
+                      type="number"
+                      value={taxIncome}
+                      onChange={(e) => setTaxIncome(e.target.value)}
+                      placeholder="Enter your annual income"
+                    />
+                  </div>
+                  <div>
+                    <Label>Tax Regime</Label>
+                    <select
+                      value={taxRegime}
+                      onChange={(e) => setTaxRegime(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option value="new">New Tax Regime 2.0 (Recommended)</option>
+                      <option value="old">Old Tax Regime</option>
+                    </select>
+                  </div>
+                </div>
+
+                <Button onClick={calculateIncomeTax} className="w-full bg-green-600 hover:bg-green-700">
+                  Calculate Tax
+                </Button>
+                
+                {taxResult && (
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="p-6 bg-red-50 rounded-lg border-2 border-red-200">
+                        <p className="text-sm text-gray-600 mb-1">Old Regime (2023-24)</p>
+                        <p className="text-2xl font-bold text-red-700">₹{taxResult.oldTax.toLocaleString('en-IN')}</p>
+                      </div>
+                      <div className="p-6 bg-green-50 rounded-lg border-2 border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">New Regime 2.0 (2024-25)</p>
+                        <p className="text-2xl font-bold text-green-700">₹{taxResult.newTax.toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+
+                    {taxResult.savings > 0 && (
+                      <div className="p-4 bg-green-100 border-2 border-green-300 rounded-lg">
+                        <p className="text-sm text-green-800 font-semibold">💰 You save ₹{taxResult.savings.toLocaleString('en-IN')} with New Tax 2.0!</p>
+                      </div>
+                    )}
+
+                    <div className="p-6 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg border-2 border-green-200">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-600">Your Tax ({taxRegime === "new" ? "New 2.0" : "Old"})</p>
+                          <p className="text-3xl font-bold text-green-700">₹{taxResult.selectedTax.toLocaleString('en-IN')}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Net Income (After Tax)</p>
+                          <p className="text-3xl font-bold text-green-700">₹{taxResult.netIncome.toLocaleString('en-IN')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="emi">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                  Loan EMI Calculator
+                </CardTitle>
+                <CardDescription>Calculate monthly EMI for home, car, or personal loans</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Loan Amount (₹)</Label>
+                    <Input
+                      type="number"
+                      value={principal}
+                      onChange={(e) => setPrincipal(e.target.value)}
+                      placeholder="1000000"
+                    />
+                  </div>
+                  <div>
+                    <Label>Interest Rate (% p.a.)</Label>
+                    <Input
+                      type="number"
+                      value={rate}
+                      onChange={(e) => setRate(e.target.value)}
+                      placeholder="8.5"
+                      step="0.1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Tenure (Years)</Label>
+                    <Input
+                      type="number"
+                      value={tenure}
+                      onChange={(e) => setTenure(e.target.value)}
+                      placeholder="5"
+                    />
+                  </div>
+                </div>
+                <Button onClick={calculateEMI} className="w-full bg-blue-600 hover:bg-blue-700">
+                  Calculate EMI
+                </Button>
+                
+                {emiResult && (
+                  <div className="space-y-4">
+                    <div className="p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
+                      <p className="text-sm text-gray-600 mb-2">Monthly EMI</p>
+                      <p className="text-4xl font-bold text-blue-700">₹{emiResult.emi.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-white rounded-lg border-2 border-gray-200">
+                        <p className="text-sm text-gray-600">Total Interest</p>
+                        <p className="text-xl font-semibold text-orange-600">₹{emiResult.totalInterest.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                      </div>
+                      <div className="p-4 bg-white rounded-lg border-2 border-gray-200">
+                        <p className="text-sm text-gray-600">Total Amount Payable</p>
+                        <p className="text-xl font-semibold text-blue-600">₹{emiResult.totalAmount.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="property">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Home className="w-5 h-5 text-orange-600" />
+                      Property Registration Fee Calculator
+                    </CardTitle>
+                    <CardDescription>Calculate stamp duty and registration charges (2024-25 rates)</CardDescription>
+                  </div>
+                  <Badge className="bg-orange-600 text-white">Gujarat Rates</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
+                  <div className="text-sm text-orange-900">
+                    <strong>Gujarat 2024:</strong> Uniform 4.9% stamp duty for all genders
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Property Value (₹)</Label>
+                    <Input
+                      type="number"
+                      value={propertyValue}
+                      onChange={(e) => setPropertyValue(e.target.value)}
+                      placeholder="5000000"
+                    />
+                  </div>
+                  <div>
+                    <Label>State</Label>
+                    <select
+                      value={propertyState}
+                      onChange={(e) => setPropertyState(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md"
+                    >
+                      <option>Gujarat</option>
+                      <option>Maharashtra</option>
+                      <option>Karnataka</option>
+                      <option>Delhi</option>
+                    </select>
+                  </div>
+                </div>
+                <Button onClick={calculateProperty} className="w-full bg-orange-600 hover:bg-orange-700">
+                  Calculate Fees
+                </Button>
+                
+                {propertyResult && (
+                  <div className="space-y-4">
+                    <div className="p-6 bg-orange-50 rounded-lg border-2 border-orange-200">
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Property Value:</span>
+                          <span className="font-semibold">₹{propertyResult.value.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Stamp Duty ({(propertyResult.rates.male * 100).toFixed(1)}%):</span>
+                          <span className="font-semibold text-orange-700">₹{propertyResult.stampDuty.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Registration Fee (1%):</span>
+                          <span className="font-semibold text-orange-700">₹{propertyResult.registrationFee.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between pt-3 border-t-2 border-orange-300">
+                          <span className="font-bold text-orange-900 text-lg">Total Fees:</span>
+                          <span className="text-3xl font-bold text-orange-700">₹{propertyResult.total.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="gratuity">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-purple-600" />
+                  Gratuity Calculator
+                </CardTitle>
+                <CardDescription>Calculate gratuity as per Payment of Gratuity Act, 1972</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Last Drawn Salary (₹/month)</Label>
+                    <Input
+                      type="number"
+                      value={lastSalary}
+                      onChange={(e) => setLastSalary(e.target.value)}
+                      placeholder="50000"
+                    />
+                  </div>
+                  <div>
+                    <Label>Years of Service</Label>
+                    <Input
+                      type="number"
+                      value={yearsOfService}
+                      onChange={(e) => setYearsOfService(e.target.value)}
+                      placeholder="10"
+                    />
+                  </div>
+                </div>
+                <Button onClick={calculateGratuity} className="w-full bg-purple-600 hover:bg-purple-700">
+                  Calculate Gratuity
+                </Button>
+                
+                {gratuityResult && (
+                  <div className="p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
+                    <p className="text-sm text-gray-600 mb-2">Gratuity Amount</p>
+                    <p className="text-4xl font-bold text-purple-700">₹{gratuityResult.gratuity.toLocaleString('en-IN')}</p>
+                    {gratuityResult.isCapped && (
+                      <p className="text-sm text-orange-600 mt-2">* Capped at maximum limit of ₹20,00,000</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-3">Formula: (Last Salary × Years × 15) / 26</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ppf">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                    PPF Calculator
+                  </CardTitle>
+                  <CardDescription>Public Provident Fund maturity calculator</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Annual Investment (₹)</Label>
+                      <Input
+                        type="number"
+                        value={ppfAnnual}
+                        onChange={(e) => setPpfAnnual(e.target.value)}
+                        placeholder="150000"
+                      />
+                    </div>
+                    <div>
+                      <Label>Years</Label>
+                      <select
+                        value={ppfYears}
+                        onChange={(e) => setPpfYears(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        <option value="15">15 years (Minimum)</option>
+                        <option value="20">20 years</option>
+                        <option value="25">25 years</option>
+                        <option value="30">30 years</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label>Interest Rate (%)</Label>
+                      <Input
+                        type="number"
+                        value="7.1"
+                        disabled
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Current PPF rate: 7.1% p.a. (Compounded annually)</p>
+                    </div>
+                  </div>
+                  <Button onClick={calculatePPF} className="w-full bg-blue-600 hover:bg-blue-700">
+                    Calculate PPF Maturity
+                  </Button>
+                  
+                  {ppfResult && (
+                    <div className="space-y-3">
+                      <div className="p-6 bg-blue-50 rounded-lg border-2 border-blue-200">
+                        <p className="text-sm text-gray-600 mb-2">Maturity Amount</p>
+                        <p className="text-4xl font-bold text-blue-700">₹{ppfResult.maturityAmount.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 bg-white rounded-lg border-2">
+                          <p className="text-xs text-gray-600">Total Invested</p>
+                          <p className="text-lg font-semibold text-gray-900">₹{ppfResult.totalInvestment.toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                          <p className="text-xs text-gray-600">Interest Earned</p>
+                          <p className="text-lg font-semibold text-green-700">₹{ppfResult.totalInterest.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-purple-600" />
+                    Fixed Deposit Calculator
+                  </CardTitle>
+                  <CardDescription>Calculate FD maturity with compound interest</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Deposit Amount (₹)</Label>
+                      <Input
+                        type="number"
+                        value={fdPrincipal}
+                        onChange={(e) => setFdPrincipal(e.target.value)}
+                        placeholder="100000"
+                      />
+                    </div>
+                    <div>
+                      <Label>Interest Rate (% p.a.)</Label>
+                      <Input
+                        type="number"
+                        value={fdRate}
+                        onChange={(e) => setFdRate(e.target.value)}
+                        placeholder="6.5"
+                        step="0.1"
+                      />
+                    </div>
+                    <div>
+                      <Label>Tenure (Months)</Label>
+                      <select
+                        value={fdMonths}
+                        onChange={(e) => setFdMonths(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        <option value="6">6 months</option>
+                        <option value="12">12 months (1 year)</option>
+                        <option value="24">24 months (2 years)</option>
+                        <option value="36">36 months (3 years)</option>
+                        <option value="60">60 months (5 years)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <Button onClick={calculateFD} className="w-full bg-purple-600 hover:bg-purple-700">
+                    Calculate FD Maturity
+                  </Button>
+                  
+                  {fdResult && (
+                    <div className="space-y-3">
+                      <div className="p-6 bg-purple-50 rounded-lg border-2 border-purple-200">
+                        <p className="text-sm text-gray-600 mb-2">Maturity Amount</p>
+                        <p className="text-4xl font-bold text-purple-700">₹{fdResult.maturity.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                      </div>
+                      <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                        <p className="text-xs text-gray-600">Interest Earned</p>
+                        <p className="text-2xl font-semibold text-green-700">₹{fdResult.interest.toLocaleString('en-IN', {maximumFractionDigits: 0})}</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

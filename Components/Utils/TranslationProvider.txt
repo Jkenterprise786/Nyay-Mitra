@@ -1,0 +1,194 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const translations = {
+  English: {
+    home: "Home",
+    schemeFinder: "Scheme Finder",
+    documentGuide: "Document Guide",
+    legalHelp: "Legal Help",
+    findLawyers: "Find Lawyers",
+    caseLawFinder: "Case Law Finder",
+    legalActs: "Legal Acts",
+    governmentApps: "Government Apps",
+    govServices: "Government Services",
+    jobsCareer: "Jobs & Career",
+    govNews: "Government News",
+    helplines: "Helplines",
+    aiAssistant: "AI Assistant",
+    aiLegalPro: "AI Legal Pro",
+    formFiller: "Form Filler",
+    noticeGenerator: "Notice Generator",
+    login: "Login",
+    logout: "Logout",
+    profile: "Profile",
+    settings: "Settings",
+    "My Dashboard": "My Dashboard",
+    "AI Document Analyzer": "AI Document Analyzer",
+    "RTI Wizard": "RTI Wizard",
+    "Document Vault": "Document Vault",
+    "Find Local Office": "Find Local Office",
+    "Verified Agents": "Verified Agents",
+    "Calculators": "Calculators",
+    "Community Forum": "Community Forum",
+    "Video Library": "Video Library"
+  },
+  Hindi: {
+    home: "होम",
+    schemeFinder: "योजना खोजें",
+    documentGuide: "दस्तावेज़ गाइड",
+    legalHelp: "कानूनी सहायता",
+    findLawyers: "वकील खोजें",
+    caseLawFinder: "केस लॉ खोजें",
+    legalActs: "कानूनी अधिनियम",
+    governmentApps: "सरकारी ऐप्स",
+    govServices: "सरकारी सेवाएं",
+    jobsCareer: "नौकरियां और करियर",
+    govNews: "सरकारी समाचार",
+    helplines: "हेल्पलाइन",
+    aiAssistant: "एआई सहायक",
+    aiLegalPro: "एआई कानूनी प्रो",
+    formFiller: "फॉर्म भरें",
+    noticeGenerator: "नोटिस जनरेटर",
+    login: "लॉगिन",
+    logout: "लॉगआउट",
+    profile: "प्रोफ़ाइल",
+    settings: "सेटिंग्स",
+    "My Dashboard": "मेरा डैशबोर्ड",
+    "AI Document Analyzer": "एआई दस्तावेज़ विश्लेषक",
+    "RTI Wizard": "आरटीआई विज़ार्ड",
+    "Document Vault": "दस्तावेज़ तिजोरी",
+    "Find Local Office": "स्थानीय कार्यालय खोजें",
+    "Verified Agents": "सत्यापित एजेंट",
+    "Calculators": "कैलकुलेटर",
+    "Community Forum": "सामुदायिक मंच",
+    "Video Library": "वीडियो लाइब्रेरी"
+  },
+  Gujarati: {
+    home: "હોમ",
+    schemeFinder: "યોજના શોધો",
+    documentGuide: "દસ્તાવેજ માર્ગદર્શિકા",
+    legalHelp: "કાનૂની સહાય",
+    findLawyers: "વકીલો શોધો",
+    caseLawFinder: "કેસ કાયદો શોધો",
+    legalActs: "કાનૂની અધિનિયમો",
+    governmentApps: "સરકારી એપ્લિકેશન્સ",
+    govServices: "સરકારી સેવાઓ",
+    jobsCareer: "નોકરીઓ અને કારકિર્દી",
+    govNews: "સરકારી સમાચાર",
+    helplines: "હેલ્પલાઇન્સ",
+    aiAssistant: "એઆઈ સહાયક",
+    aiLegalPro: "એઆઈ કાનૂની પ્રો",
+    formFiller: "ફોર્મ ભરનાર",
+    noticeGenerator: "નોટિસ જનરેટર",
+    login: "લૉગિન",
+    logout: "લૉગઆઉટ",
+    profile: "પ્રોફાઇલ",
+    settings: "સેટિંગ્સ",
+    "My Dashboard": "મારું ડેશબોર્ડ",
+    "AI Document Analyzer": "એઆઈ દસ્તાવેજ વિશ્લેષક",
+    "RTI Wizard": "આરટીઆઈ વિઝાર્ડ",
+    "Document Vault": "દસ્તાવેજ તિજોરી",
+    "Find Local Office": "સ્થાનિક કાર્યાલય શોધો",
+    "Verified Agents": "ચકાસાયેલ એજન્ટ્સ",
+    "Calculators": "કેલ્ક્યુલેટર",
+    "Community Forum": "સમુદાય મંચ",
+    "Video Library": "વિડિયો લાઇબ્રેરી"
+  },
+  Tamil: {
+    home: "முகப்பு",
+    schemeFinder: "திட்டம் தேடல்",
+    documentGuide: "ஆவண வழிகாட்டி",
+    legalHelp: "சட்ட உதவி",
+    findLawyers: "வழக்கறிஞர்களைக் கண்டறியவும்",
+    caseLawFinder: "வழக்கு சட்டம் தேடல்",
+    legalActs: "சட்ட சட்டங்கள்",
+    governmentApps: "அரசு பயன்பாடுகள்",
+    govServices: "அரசு சேவைகள்",
+    jobsCareer: "வேலைகள் மற்றும் தொழில்",
+    govNews: "அரசு செய்திகள்",
+    helplines: "உதவி எண்கள்",
+    aiAssistant: "AI உதவியாளர்",
+    aiLegalPro: "AI சட்ட நிபுணர்",
+    formFiller: "படிவம் நிரப்பி",
+    noticeGenerator: "அறிவிப்பு உருவாக்கி",
+    login: "உள்நுழைவு",
+    logout: "வெளியேறு",
+    profile: "சுயவிவரம்",
+    settings: "அமைப்புகள்",
+    "My Dashboard": "எனது டாஷ்போர்டு",
+    "AI Document Analyzer": "AI ஆவண பகுப்பாய்வி",
+    "RTI Wizard": "RTI வழிகாட்டி",
+    "Document Vault": "ஆவண பெட்டகம்",
+    "Find Local Office": "உள்ளூர் அலுவலகம் கண்டறியவும்",
+    "Verified Agents": "சரிபார்க்கப்பட்ட முகவர்கள்",
+    "Calculators": "கணக்கீட்டாளர்கள்",
+    "Community Forum": "சமூக மன்றம்",
+    "Video Library": "வீடியோ நூலகம்"
+  },
+  Bengali: {
+    home: "হোম",
+    schemeFinder: "প্রকল্প অনুসন্ধান",
+    documentGuide: "নথি গাইড",
+    legalHelp: "আইনি সহায়তা",
+    findLawyers: "আইনজীবী খুঁজুন",
+    caseLawFinder: "মামলা আইন অনুসন্ধান",
+    legalActs: "আইনি আইন",
+    governmentApps: "সরকারি অ্যাপ্লিকেশন",
+    govServices: "সরকারি পরিষেবা",
+    jobsCareer: "চাকরি ও ক্যারিয়ার",
+    govNews: "সরকারি খবর",
+    helplines: "হেল্পলাইন",
+    aiAssistant: "AI সহায়ক",
+    aiLegalPro: "AI আইনি প্রো",
+    formFiller: "ফর্ম পূরণকারী",
+    noticeGenerator: "নোটিশ জেনারেটর",
+    login: "লগইন",
+    logout: "লগআউট",
+    profile: "প্রোফাইল",
+    settings: "সেটিংস",
+    "My Dashboard": "আমার ড্যাশবোর্ড",
+    "AI Document Analyzer": "AI নথি বিশ্লেষক",
+    "RTI Wizard": "RTI উইজার্ড",
+    "Document Vault": "নথি ভল্ট",
+    "Find Local Office": "স্থানীয় অফিস খুঁজুন",
+    "Verified Agents": "যাচাইকৃত এজেন্ট",
+    "Calculators": "ক্যালকুলেটর",
+    "Community Forum": "কমিউনিটি ফোরাম",
+    "Video Library": "ভিডিও লাইব্রেরি"
+  }
+};
+
+const TranslationContext = createContext();
+
+export function TranslationProvider({ children }) {
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('app_language') || 'English';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('app_language', language);
+    document.documentElement.lang = language === 'English' ? 'en' : 
+                                   language === 'Hindi' ? 'hi' :
+                                   language === 'Gujarati' ? 'gu' :
+                                   language === 'Tamil' ? 'ta' :
+                                   language === 'Bengali' ? 'bn' : 'en';
+  }, [language]);
+
+  const t = (key) => {
+    return translations[language]?.[key] || translations['English']?.[key] || key;
+  };
+
+  return (
+    <TranslationContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </TranslationContext.Provider>
+  );
+}
+
+export function useTranslation() {
+  const context = useContext(TranslationContext);
+  if (!context) {
+    throw new Error('useTranslation must be used within TranslationProvider');
+  }
+  return context;
+}

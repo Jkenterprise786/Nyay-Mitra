@@ -1,0 +1,115 @@
+{
+  "name": "ForumQuestion",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who posted the question"
+    },
+    "title": {
+      "type": "string",
+      "description": "Question title"
+    },
+    "content": {
+      "type": "string",
+      "description": "Detailed question content"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Family Law",
+        "Property Law",
+        "Consumer Rights",
+        "Criminal Law",
+        "Employment Law",
+        "Tax & Finance",
+        "Government Schemes",
+        "Documents & Certificates",
+        "Other"
+      ],
+      "description": "Question category"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Question tags"
+    },
+    "views": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of views"
+    },
+    "upvotes": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of upvotes"
+    },
+    "downvotes": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of downvotes"
+    },
+    "answer_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of answers"
+    },
+    "best_answer_id": {
+      "type": "string",
+      "description": "ID of the best answer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Open",
+        "Answered",
+        "Closed"
+      ],
+      "default": "Open",
+      "description": "Question status"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Featured question"
+    }
+  },
+  "required": [
+    "user_id",
+    "title",
+    "content",
+    "category"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,326 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Briefcase, Search, ExternalLink, MapPin, Calendar, Users, Download, Clock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { format } from "date-fns";
+
+export default function JobsCareer() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
+
+  const { data: jobs, isLoading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => base44.entities.JobOpportunity.filter({ active: true }, '-created_date'),
+    initialData: []
+  });
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.job_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.organization?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || job.category === selectedCategory;
+    const matchesType = selectedType === "all" || job.job_type === selectedType;
+    return matchesSearch && matchesCategory && matchesType;
+  });
+
+  const categories = ["Central Government", "State Government", "PSU", "Defense", "Railways", "Banking", "Teaching"];
+  const types = ["Government Job", "Apprenticeship", "Internship", "Contract", "Permanent"];
+
+  const typeColors = {
+    "Government Job": "bg-blue-100 text-blue-800",
+    "Apprenticeship": "bg-purple-100 text-purple-800",
+    "Internship": "bg-green-100 text-green-800",
+    "Contract": "bg-orange-100 text-orange-800",
+    "Permanent": "bg-red-100 text-red-800"
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with SVG Logo */}
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-4 mb-6">
+            {/* Jobs SVG Logo */}
+            <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="jobsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#3B82F6', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#6366F1', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <rect x="25" y="35" width="50" height="40" rx="5" fill="url(#jobsGradient)"/>
+              <rect x="30" y="40" width="40" height="30" fill="white" opacity="0.3"/>
+              <rect x="45" y="30" width="10" height="10" rx="2" fill="url(#jobsGradient)"/>
+              <circle cx="40" cy="55" r="4" fill="white"/>
+              <circle cx="60" cy="55" r="4" fill="white"/>
+              <line x1="35" y1="65" x2="45" y2="65" stroke="white" strokeWidth="2"/>
+              <line x1="55" y1="65" x2="65" y2="65" stroke="white" strokeWidth="2"/>
+            </svg>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                <Briefcase className="w-8 h-8" />
+                Jobs & Career Portal
+              </h1>
+              <p className="text-blue-100 mt-1">🔔 Real-time government job updates with live deadlines</p>
+            </div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                <span>Live deadline tracking</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                <span>Real-time updates</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                <span>Latest opportunities</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="search">Search Jobs</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    placeholder="Search by job title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Job Type</Label>
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {types.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="mb-4">
+          <p className="text-gray-600">
+            Found <span className="font-semibold text-gray-900">{filteredJobs.length}</span> opportunities
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 bg-gray-200 rounded w-3/4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-20 bg-gray-200 rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredJobs.length > 0 ? (
+          <div className="space-y-4">
+            {filteredJobs.map(job => (
+              <Dialog key={job.id}>
+                <DialogTrigger asChild>
+                  <Card className="cursor-pointer hover:shadow-lg transition-all">
+                    <CardHeader>
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div className="flex gap-2">
+                          <Badge className={typeColors[job.job_type]}>{job.job_type}</Badge>
+                          <Badge variant="outline">{job.category}</Badge>
+                        </div>
+                        {job.application_end_date && (
+                          <Badge variant="outline" className="text-red-600 border-red-200">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Deadline: {format(new Date(job.application_end_date), 'MMM d')}
+                          </Badge>
+                        )}
+                      </div>
+                      <CardTitle className="text-xl">{job.job_title}</CardTitle>
+                      <CardDescription>{job.organization}</CardDescription>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-3">
+                      <div className="grid md:grid-cols-3 gap-4 text-sm">
+                        {job.vacancies && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Users className="w-4 h-4" />
+                            <span>{job.vacancies} Vacancies</span>
+                          </div>
+                        )}
+                        {job.location && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            <span>{job.location}</span>
+                          </div>
+                        )}
+                        {job.salary && (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <span className="font-medium text-green-600">{job.salary}</span>
+                          </div>
+                        )}
+                      </div>
+                      {job.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl">{job.job_title}</DialogTitle>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge className={typeColors[job.job_type]}>{job.job_type}</Badge>
+                      <Badge variant="outline">{job.category}</Badge>
+                    </div>
+                  </DialogHeader>
+
+                  <div className="space-y-6 mt-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Organization</p>
+                        <p className="font-semibold">{job.organization}</p>
+                      </div>
+                      {job.location && (
+                        <div>
+                          <p className="text-sm text-gray-600">Location</p>
+                          <p className="font-semibold">{job.location}</p>
+                        </div>
+                      )}
+                      {job.vacancies && (
+                        <div>
+                          <p className="text-sm text-gray-600">Vacancies</p>
+                          <p className="font-semibold">{job.vacancies}</p>
+                        </div>
+                      )}
+                      {job.salary && (
+                        <div>
+                          <p className="text-sm text-gray-600">Salary</p>
+                          <p className="font-semibold text-green-600">{job.salary}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {job.description && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Description</h3>
+                        <p className="text-gray-600">{job.description}</p>
+                      </div>
+                    )}
+
+                    {job.qualification && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Qualification Required</h3>
+                        <p className="text-gray-600">{job.qualification}</p>
+                      </div>
+                    )}
+
+                    {job.age_limit && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Age Limit</h3>
+                        <p className="text-gray-600">{job.age_limit}</p>
+                      </div>
+                    )}
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {job.application_start_date && (
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <p className="text-xs text-gray-600 mb-1">Application Start</p>
+                          <p className="font-semibold">{format(new Date(job.application_start_date), 'MMM d, yyyy')}</p>
+                        </div>
+                      )}
+                      {job.application_end_date && (
+                        <div className="p-4 bg-red-50 rounded-lg">
+                          <p className="text-xs text-gray-600 mb-1">Application Deadline</p>
+                          <p className="font-semibold text-red-600">{format(new Date(job.application_end_date), 'MMM d, yyyy')}</p>
+                        </div>
+                      )}
+                      {job.exam_date && (
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <p className="text-xs text-gray-600 mb-1">Exam Date</p>
+                          <p className="font-semibold">{format(new Date(job.exam_date), 'MMM d, yyyy')}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3">
+                      {job.notification_pdf && (
+                        <Button 
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => window.open(job.notification_pdf, '_blank')}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Notification
+                        </Button>
+                      )}
+                      {job.application_link && (
+                        <Button 
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => window.open(job.application_link, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Apply Now
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Briefcase className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No jobs found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

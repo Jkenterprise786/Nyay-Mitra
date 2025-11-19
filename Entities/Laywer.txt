@@ -1,0 +1,132 @@
+{
+  "name": "Lawyer",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Lawyer name"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "bar_council_registration": {
+      "type": "string",
+      "description": "Bar council registration number"
+    },
+    "specialties": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Property Law",
+          "Family Law",
+          "Criminal Law",
+          "Consumer Law",
+          "Labor Law",
+          "Corporate Law",
+          "Civil Law",
+          "Constitutional Law",
+          "Tax Law",
+          "Other"
+        ]
+      },
+      "description": "Areas of specialization"
+    },
+    "state": {
+      "type": "string",
+      "description": "State where practicing"
+    },
+    "city": {
+      "type": "string",
+      "description": "City"
+    },
+    "experience_years": {
+      "type": "number",
+      "description": "Years of experience"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Languages spoken"
+    },
+    "consultation_fee": {
+      "type": "number",
+      "description": "Consultation fee in INR"
+    },
+    "consultation_modes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "In-Person",
+          "Phone",
+          "Video Call"
+        ]
+      },
+      "description": "Available consultation modes"
+    },
+    "verified_status": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether lawyer is verified"
+    },
+    "verification_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of verification"
+    },
+    "profile_image": {
+      "type": "string",
+      "description": "Profile image URL"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Professional bio"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Average rating"
+    },
+    "review_count": {
+      "type": "number",
+      "description": "Number of reviews"
+    },
+    "subscription_tier": {
+      "type": "string",
+      "enum": [
+        "Free",
+        "Basic",
+        "Premium"
+      ],
+      "default": "Free",
+      "description": "Subscription tier"
+    },
+    "subscription_expiry": {
+      "type": "string",
+      "format": "date",
+      "description": "Subscription expiry date"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether profile is active"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "phone",
+    "bar_council_registration",
+    "specialties",
+    "state",
+    "city"
+  ]
+}

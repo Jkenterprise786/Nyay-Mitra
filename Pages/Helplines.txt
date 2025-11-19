@@ -1,0 +1,259 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Phone, Search, Mail, Globe, Clock, MapPin, Copy } from "lucide-react";
+import { toast } from "sonner";
+
+export default function Helplines() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const { data: helplines, isLoading } = useQuery({
+    queryKey: ['helplines'],
+    queryFn: () => base44.entities.Helpline.list('-created_date'),
+    initialData: []
+  });
+
+  const filteredHelplines = helplines.filter(helpline => {
+    const matchesSearch = helpline.helpline_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         helpline.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || helpline.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = ["Emergency", "Health", "Women Safety", "Child Helpline", "Senior Citizens", "Disaster Management", "Consumer", "Police", "Cybercrime", "Legal Aid", "Mental Health"];
+
+  const categoryColors = {
+    "Emergency": "bg-red-100 text-red-800 border-red-200",
+    "Health": "bg-green-100 text-green-800 border-green-200",
+    "Women Safety": "bg-pink-100 text-pink-800 border-pink-200",
+    "Child Helpline": "bg-blue-100 text-blue-800 border-blue-200",
+    "Senior Citizens": "bg-purple-100 text-purple-800 border-purple-200",
+    "Police": "bg-indigo-100 text-indigo-800 border-indigo-200",
+    "Cybercrime": "bg-orange-100 text-orange-800 border-orange-200",
+    "Legal Aid": "bg-teal-100 text-teal-800 border-teal-200",
+    "Mental Health": "bg-cyan-100 text-cyan-800 border-cyan-200"
+  };
+
+  const copyNumber = (number) => {
+    navigator.clipboard.writeText(number);
+    toast.success("Phone number copied!");
+  };
+
+  const callNumber = (number) => {
+    window.location.href = `tel:${number}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with SVG Logo */}
+      <div className="bg-gradient-to-br from-red-500 to-red-600 text-white shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-4 mb-6">
+            {/* Helplines SVG Logo */}
+            <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="helplineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#EF4444', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#DC2626', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="35" fill="url(#helplineGradient)"/>
+              <path d="M 35 40 Q 35 30, 45 30 L 55 30 Q 65 30, 65 40 L 65 50 Q 65 60, 55 60 L 50 60 L 50 70" stroke="white" strokeWidth="4" fill="none"/>
+              <circle cx="50" cy="75" r="3" fill="white"/>
+              <circle cx="30" cy="50" r="8" fill="white" opacity="0.8"/>
+              <circle cx="70" cy="50" r="8" fill="white" opacity="0.8"/>
+            </svg>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                <Phone className="w-8 h-8" />
+                Government Helplines
+              </h1>
+              <p className="text-red-100 mt-1">📞 Emergency & support helpline numbers</p>
+            </div>
+          </div>
+
+          <div className="bg-yellow-400/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-300/30">
+            <p className="text-yellow-50 text-sm">
+              ⚠️ <strong>Emergency:</strong> Dial 112 for all emergencies (Police, Fire, Ambulance)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="search">Search Helplines</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    placeholder="Search by name or service..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="mb-4">
+          <p className="text-gray-600">
+            <span className="font-semibold text-gray-900">{filteredHelplines.length}</span> helplines available
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="grid md:grid-cols-2 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 bg-gray-200 rounded w-3/4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-20 bg-gray-200 rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredHelplines.length > 0 ? (
+          <div className="grid md:grid-cols-2 gap-6">
+            {filteredHelplines.map(helpline => (
+              <Card key={helpline.id} className="hover:shadow-lg transition-all">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <Badge className={`${categoryColors[helpline.category]} border`}>
+                      {helpline.category}
+                    </Badge>
+                    {helpline.is_toll_free && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Toll Free
+                      </Badge>
+                    )}
+                  </div>
+                  <CardTitle className="text-xl">{helpline.helpline_name}</CardTitle>
+                  <CardDescription>{helpline.description}</CardDescription>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  {/* Phone Number */}
+                  <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-5 h-5 text-red-600" />
+                      <div>
+                        <p className="text-sm text-gray-600">Primary Number</p>
+                        <p className="text-2xl font-bold text-red-600">{helpline.phone_number}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => copyNumber(helpline.phone_number)}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => callNumber(helpline.phone_number)}>
+                        <Phone className="w-4 h-4 mr-1" />
+                        Call
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Alternative Numbers */}
+                  {helpline.alternative_numbers && helpline.alternative_numbers.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Alternative Numbers:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {helpline.alternative_numbers.map((number, index) => (
+                          <Badge key={index} variant="outline" className="cursor-pointer" onClick={() => copyNumber(number)}>
+                            {number}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Info */}
+                  <div className="space-y-2 text-sm">
+                    {helpline.availability && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        <span>{helpline.availability}</span>
+                      </div>
+                    )}
+
+                    {helpline.state && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <MapPin className="w-4 h-4" />
+                        <span>{helpline.state}</span>
+                      </div>
+                    )}
+
+                    {helpline.email && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Mail className="w-4 h-4" />
+                        <span className="truncate">{helpline.email}</span>
+                      </div>
+                    )}
+
+                    {helpline.website && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Globe className="w-4 h-4" />
+                        <a href={helpline.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate">
+                          {helpline.website}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Languages */}
+                  {helpline.languages_supported && helpline.languages_supported.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Languages Supported:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {helpline.languages_supported.map((lang, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {lang}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Phone className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No helplines found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

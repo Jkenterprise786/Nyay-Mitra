@@ -1,0 +1,199 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FileText, MapPin, Clock, DollarSign, ChevronRight, AlertTriangle, Download } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+export default function DocumentCard({ document }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  const typeColors = {
+    "Certificate": "bg-green-100 text-green-800",
+    "ID Document": "bg-blue-100 text-blue-800",
+    "Legal Document": "bg-purple-100 text-purple-800",
+    "Property Document": "bg-orange-100 text-orange-800",
+    "Educational Document": "bg-pink-100 text-pink-800",
+    "Financial Document": "bg-yellow-100 text-yellow-800"
+  };
+
+  return (
+    <>
+      <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => setShowDetails(true)}>
+        <CardHeader>
+          <Badge className={`w-fit mb-2 ${typeColors[document.type] || "bg-gray-100 text-gray-800"}`}>
+            {document.type}
+          </Badge>
+          <CardTitle className="text-lg">{document.name}</CardTitle>
+          <CardDescription className="line-clamp-2">
+            {document.description}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="w-4 h-4 text-gray-400" />
+            <span>{document.state}</span>
+          </div>
+
+          {document.timeline && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span>{document.timeline}</span>
+            </div>
+          )}
+
+          {document.fees && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <DollarSign className="w-4 h-4 text-gray-400" />
+              <span>{document.fees}</span>
+            </div>
+          )}
+        </CardContent>
+
+        <CardFooter>
+          <Button variant="ghost" className="w-full justify-between">
+            View Complete Guide
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Details Dialog */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{document.name}</DialogTitle>
+            <div className="flex gap-2 mt-2">
+              <Badge className={typeColors[document.type]}>
+                {document.type}
+              </Badge>
+              <Badge variant="outline">{document.state}</Badge>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Description */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">About This Document</h3>
+              <p className="text-gray-600">{document.description}</p>
+            </div>
+
+            {/* Key Info */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {document.timeline && (
+                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+                  <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-blue-900">Processing Time</p>
+                    <p className="text-sm text-blue-700">{document.timeline}</p>
+                  </div>
+                </div>
+              )}
+              {document.fees && (
+                <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg">
+                  <DollarSign className="w-5 h-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-green-900">Fees</p>
+                    <p className="text-sm text-green-700">{document.fees}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Process Steps */}
+            {document.process_steps && document.process_steps.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Step-by-Step Process</h3>
+                <Accordion type="single" collapsible className="space-y-2">
+                  {document.process_steps.map((step, index) => (
+                    <AccordionItem key={index} value={`step-${index}`}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold">
+                            {step.step_number || index + 1}
+                          </div>
+                          <span className="font-medium">{step.title}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="ml-11 space-y-2">
+                          <p className="text-gray-600">{step.description}</p>
+                          {step.documents_needed && step.documents_needed.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-700 mb-1">Documents needed:</p>
+                              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                                {step.documents_needed.map((doc, i) => (
+                                  <li key={i}>{doc}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            )}
+
+            {/* Office Locations */}
+            {document.office_locations && document.office_locations.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Office Locations</h3>
+                <div className="space-y-3">
+                  {document.office_locations.map((office, index) => (
+                    <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                      <h4 className="font-medium text-gray-900 mb-2">{office.office_name}</h4>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <p><strong>Address:</strong> {office.address}</p>
+                        {office.phone && <p><strong>Phone:</strong> {office.phone}</p>}
+                        {office.hours && <p><strong>Hours:</strong> {office.hours}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Common Mistakes */}
+            {document.common_mistakes && document.common_mistakes.length > 0 && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <div className="flex gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-yellow-900 mb-2">Common Mistakes to Avoid</h3>
+                    <ul className="list-disc list-inside text-sm text-yellow-800 space-y-1">
+                      {document.common_mistakes.map((mistake, index) => (
+                        <li key={index}>{mistake}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Required Forms */}
+            {document.required_forms && document.required_forms.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Required Forms</h3>
+                <div className="space-y-2">
+                  {document.required_forms.map((form, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <span className="text-sm">{form}</span>
+                      <Button size="sm" variant="outline">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

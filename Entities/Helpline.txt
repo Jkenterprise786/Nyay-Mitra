@@ -1,0 +1,95 @@
+{
+  "name": "Helpline",
+  "type": "object",
+  "properties": {
+    "helpline_name": {
+      "type": "string",
+      "description": "Helpline name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Emergency",
+        "Health",
+        "Women Safety",
+        "Child Helpline",
+        "Senior Citizens",
+        "Disaster Management",
+        "Consumer",
+        "Police",
+        "Cybercrime",
+        "Legal Aid",
+        "Mental Health",
+        "Other"
+      ],
+      "description": "Helpline category"
+    },
+    "phone_number": {
+      "type": "string",
+      "description": "Helpline phone number"
+    },
+    "alternative_numbers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Alternative contact numbers"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "website": {
+      "type": "string",
+      "description": "Website URL"
+    },
+    "description": {
+      "type": "string",
+      "description": "What the helpline is for"
+    },
+    "availability": {
+      "type": "string",
+      "description": "Operating hours (e.g., 24/7, 9 AM - 5 PM)"
+    },
+    "state": {
+      "type": "string",
+      "description": "State (use 'All India' for national helplines)"
+    },
+    "languages_supported": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Languages supported"
+    },
+    "is_toll_free": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether call is toll-free"
+    }
+  },
+  "required": [
+    "helpline_name",
+    "category",
+    "phone_number",
+    "description"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,278 @@
+
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Building2, Search, ExternalLink, Clock, DollarSign, CheckCircle, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+export default function GovernmentServices() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedState, setSelectedState] = useState("all");
+
+  const { data: services, isLoading } = useQuery({
+    queryKey: ['gov-services'],
+    queryFn: () => base44.entities.GovernmentService.list('-created_date'),
+    initialData: []
+  });
+
+  const filteredServices = services.filter(service => {
+    const matchesSearch = service.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         service.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
+    const matchesState = selectedState === "all" || service.state === selectedState;
+    return matchesSearch && matchesCategory && matchesState;
+  });
+
+  const categories = ["Certificates", "Licenses", "Registration", "Pension", "Tax", "Property", "Legal", "Healthcare", "Education", "Utilities"];
+  const states = ["Central", "Andhra Pradesh", "Gujarat", "Maharashtra", "Tamil Nadu", "Karnataka", "Delhi", "Uttar Pradesh"];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with SVG Logo */}
+      <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Government Services SVG Logo */}
+            <svg className="w-16 h-16" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="govGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{stopColor: '#10B981', stopOpacity: 1}} />
+                  <stop offset="100%" style={{stopColor: '#059669', stopOpacity: 1}} />
+                </linearGradient>
+              </defs>
+              <rect x="20" y="40" width="60" height="40" fill="url(#govGradient)"/>
+              <rect x="25" y="45" width="50" height="30" fill="white" opacity="0.3"/>
+              <polygon points="20,40 50,15 80,40" fill="url(#govGradient)"/>
+              <rect x="35" y="55" width="8" height="15" fill="white"/>
+              <rect x="57" y="55" width="8" height="15" fill="white"/>
+              <rect x="46" y="60" width="8" height="20" fill="#059669"/>
+              <circle cx="50" cy="30" r="8" fill="white"/>
+            </svg>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
+                <Building2 className="w-8 h-8" />
+                Government Services
+              </h1>
+              <p className="text-emerald-100 mt-1">Access online government services & portals</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="search">Search Services</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>State</Label>
+                <Select value={selectedState} onValueChange={setSelectedState}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All States" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    {states.map(state => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="mb-4">
+          <p className="text-gray-600">
+            Found <span className="font-semibold text-gray-900">{filteredServices.length}</span> services
+          </p>
+        </div>
+
+        {isLoading ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 bg-gray-200 rounded w-3/4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-20 bg-gray-200 rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredServices.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredServices.map(service => (
+              <Dialog key={service.id}>
+                <DialogTrigger asChild>
+                  <Card className="cursor-pointer hover:shadow-lg transition-all">
+                    <CardHeader>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-emerald-100 text-emerald-800">{service.category}</Badge>
+                        {service.online_available && (
+                          <Badge variant="outline" className="text-xs">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Online
+                          </Badge>
+                        )}
+                      </div>
+                      <CardTitle className="text-lg">{service.service_name}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {service.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {service.processing_time && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Clock className="w-4 h-4" />
+                          <span>{service.processing_time}</span>
+                        </div>
+                      )}
+                      {service.fees && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <DollarSign className="w-4 h-4" />
+                          <span>{service.fees}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </DialogTrigger>
+
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl">{service.service_name}</DialogTitle>
+                    <div className="flex gap-2 mt-2">
+                      <Badge className="bg-emerald-100 text-emerald-800">{service.category}</Badge>
+                      <Badge variant="outline">{service.state}</Badge>
+                      {service.online_available && <Badge className="bg-green-100 text-green-800">Online</Badge>}
+                    </div>
+                  </DialogHeader>
+
+                  <div className="space-y-6 mt-4">
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Description</h3>
+                      <p className="text-gray-600">{service.description}</p>
+                    </div>
+
+                    {service.eligibility && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Eligibility</h3>
+                        <p className="text-gray-600">{service.eligibility}</p>
+                      </div>
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {service.fees && (
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-gray-600 mb-1">Fees</p>
+                          <p className="font-semibold text-lg">{service.fees}</p>
+                        </div>
+                      )}
+                      {service.processing_time && (
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <p className="text-sm text-gray-600 mb-1">Processing Time</p>
+                          <p className="font-semibold text-lg">{service.processing_time}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {service.required_documents && service.required_documents.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Required Documents</h3>
+                        <ul className="space-y-2">
+                          {service.required_documents.map((doc, index) => (
+                            <li key={index} className="flex gap-2">
+                              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-600">{doc}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {service.process_steps && service.process_steps.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Process Steps</h3>
+                        <ol className="space-y-2">
+                          {service.process_steps.map((step, index) => (
+                            <li key={index} className="flex gap-3">
+                              <span className="font-semibold text-emerald-600">{index + 1}.</span>
+                              <span className="text-gray-600">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {service.contact_details && (
+                      <div>
+                        <h3 className="font-semibold text-lg mb-2">Contact Details</h3>
+                        <div className="space-y-2 text-sm text-gray-600">
+                          {service.contact_details.phone && <p><strong>Phone:</strong> {service.contact_details.phone}</p>}
+                          {service.contact_details.email && <p><strong>Email:</strong> {service.contact_details.email}</p>}
+                          {service.contact_details.address && <p><strong>Address:</strong> {service.contact_details.address}</p>}
+                        </div>
+                      </div>
+                    )}
+
+                    {service.portal_url && (
+                      <Button 
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => window.open(service.portal_url, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Access Online Portal
+                      </Button>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No services found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

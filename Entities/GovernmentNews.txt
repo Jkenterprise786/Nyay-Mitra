@@ -1,0 +1,90 @@
+{
+  "name": "GovernmentNews",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "News title"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Policy Update",
+        "New Scheme",
+        "Legal Update",
+        "Announcement",
+        "Tender",
+        "Recruitment",
+        "Public Notice",
+        "Other"
+      ],
+      "description": "News category"
+    },
+    "ministry": {
+      "type": "string",
+      "description": "Ministry/Department"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary"
+    },
+    "content": {
+      "type": "string",
+      "description": "Full content"
+    },
+    "publish_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Publication date"
+    },
+    "source_url": {
+      "type": "string",
+      "description": "Original source URL"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "News image URL"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for categorization"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Hindi",
+        "Gujarati",
+        "Tamil"
+      ],
+      "default": "English"
+    }
+  },
+  "required": [
+    "title",
+    "category",
+    "summary",
+    "publish_date"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

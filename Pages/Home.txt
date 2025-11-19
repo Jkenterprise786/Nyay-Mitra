@@ -1,0 +1,362 @@
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
+import { 
+  Building2, FileText, Scale, Users, ArrowRight, 
+  Shield, Clock, Globe, CheckCircle, Star, TrendingUp,
+  Bot, Video, MessageSquare, Calculator, Sparkles, BookOpen,
+  Gavel, Phone, MapPin, Zap
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+export default function HomePage() {
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({
+    users: "50,000+",
+    schemes: "500+",
+    lawyers: "1,000+",
+    success: "10,000+"
+  });
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.log("Not logged in");
+      }
+    };
+    loadUser();
+  }, []);
+
+  const features = [
+    {
+      icon: Building2,
+      title: "AI Scheme Finder",
+      description: "Find eligible schemes from 500+ programs with AI-powered personalized matching",
+      color: "from-orange-500 to-orange-600",
+      link: createPageUrl("SchemeFinder"),
+      badge: "AI Powered"
+    },
+    {
+      icon: Bot,
+      title: "AI Legal Assistant",
+      description: "24/7 AI legal help, document analysis, and chat history for all your queries",
+      color: "from-purple-500 to-purple-600",
+      link: createPageUrl("AILegalPro"),
+      badge: "New"
+    },
+    {
+      icon: FileText,
+      title: "Document Helper",
+      description: "Step-by-step guides with video tutorials for all government documents",
+      color: "from-blue-500 to-blue-600",
+      link: createPageUrl("DocumentGuide"),
+      badge: "Video Guides"
+    },
+    {
+      icon: Scale,
+      title: "Legal Knowledge Base",
+      description: "Understand rights, analyze docs, access 1000+ case laws and legal acts",
+      color: "from-green-500 to-green-600",
+      link: createPageUrl("LegalHelp"),
+      badge: "Comprehensive"
+    },
+    {
+      icon: Shield,
+      title: "Secure Document Vault",
+      description: "Store documents with 256-bit encryption, biometric & passcode protection",
+      color: "from-indigo-500 to-indigo-600",
+      link: createPageUrl("DocumentVault"),
+      badge: "Encrypted"
+    },
+    {
+      icon: Calculator,
+      title: "Tax 2.0 Calculators",
+      description: "Income tax with old vs new regime, EMI, property tax, gratuity calculators",
+      color: "from-teal-500 to-teal-600",
+      link: createPageUrl("Calculators"),
+      badge: "Updated 2025"
+    }
+  ];
+
+  const aiTools = [
+    { icon: Gavel, title: "AI Legal Pro", desc: "Advanced legal assistance", link: createPageUrl("AILegalPro"), color: "text-green-600" },
+    { icon: FileText, title: "Form Filler", desc: "AI-guided form filling", link: createPageUrl("FormFiller"), color: "text-blue-600" },
+    { icon: Sparkles, title: "RTI Wizard", desc: "Generate RTI applications", link: createPageUrl("RTIWizard"), color: "text-amber-600" },
+    { icon: MessageSquare, title: "Notice Generator", desc: "Create legal notices", link: createPageUrl("NoticeGenerator"), color: "text-pink-600" }
+  ];
+
+  const quickServices = [
+    { icon: Video, title: "Video Library", link: createPageUrl("VideoLibrary"), color: "text-red-600" },
+    { icon: Users, title: "Find Lawyers", link: createPageUrl("LawyerDirectory"), color: "text-pink-600" },
+    { icon: MessageSquare, title: "Community Forum", link: createPageUrl("CommunityForum"), color: "text-indigo-600" },
+    { icon: Phone, title: "Helplines", link: createPageUrl("Helplines"), color: "text-green-600" },
+    { icon: MapPin, title: "Local Offices", link: createPageUrl("LocalOffices"), color: "text-orange-600" },
+    { icon: BookOpen, title: "Legal Acts", link: createPageUrl("LegalActs"), color: "text-purple-600" }
+  ];
+
+  const statsList = [
+    { icon: Users, label: "Active Users", value: stats.users, color: "text-orange-600", bg: "from-orange-100 to-orange-200" },
+    { icon: Building2, label: "Schemes", value: stats.schemes, color: "text-blue-600", bg: "from-blue-100 to-blue-200" },
+    { icon: Scale, label: "Verified Lawyers", value: stats.lawyers, color: "text-green-600", bg: "from-green-100 to-green-200" },
+    { icon: Star, label: "Success Stories", value: stats.success, color: "text-purple-600", bg: "from-purple-100 to-purple-200" }
+  ];
+
+  const benefits = [
+    { icon: Shield, title: "100% Free", description: "All information completely free", color: "text-blue-600" },
+    { icon: Bot, title: "AI-Powered", description: "Advanced AI assistance", color: "text-purple-600" },
+    { icon: Globe, title: "5 Languages", description: "EN, HI, GU, TA, BN", color: "text-green-600" },
+    { icon: Zap, title: "Instant Help", description: "24/7 availability", color: "text-orange-600" }
+  ];
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section with Enhanced SVG Logo */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-green-50">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-500 rounded-full blur-3xl animate-pulse" />
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Main Nyay Mitra SVG Logo */}
+            <div className="flex justify-center mb-6 animate-slide-in">
+              <svg className="w-32 h-32 drop-shadow-2xl" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="indiaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{stopColor: '#FF9933', stopOpacity: 1}} />
+                    <stop offset="33%" style={{stopColor: '#FFFFFF', stopOpacity: 1}} />
+                    <stop offset="66%" style={{stopColor: '#FFFFFF', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: '#138808', stopOpacity: 1}} />
+                  </linearGradient>
+                  <filter id="shadow">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3"/>
+                  </filter>
+                </defs>
+                <circle cx="50" cy="50" r="45" fill="url(#indiaGradient)" stroke="#000080" strokeWidth="2" filter="url(#shadow)" />
+                <path d="M50 25 L35 55 L50 50 L65 55 Z" fill="#000080" />
+                <circle cx="50" cy="50" r="10" fill="#000080" />
+                <circle cx="50" cy="50" r="6" fill="white" />
+                <rect x="47" y="55" width="6" height="20" fill="#000080" />
+              </svg>
+            </div>
+            
+            <Badge className="mb-4 bg-orange-100 text-orange-700 border-orange-200 text-base px-4 py-2 animate-slide-in">
+              🇮🇳 Trusted by 50,000+ Citizens
+            </Badge>
+            
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight animate-slide-in">
+              India's <span className="bg-gradient-to-r from-orange-600 via-white to-green-600 bg-clip-text text-transparent">
+                #1 Legal & Government
+              </span> Platform
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed animate-slide-in">
+              AI-powered scheme matching • Secure document vault • Legal help • Verified lawyers - All FREE
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-in">
+              {user ? (
+                <Link to={createPageUrl("UserDashboard")}>
+                  <Button size="lg" className="gradient-saffron text-white text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
+                    <Sparkles className="mr-2 w-5 h-5" />
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+              ) : (
+                <Button size="lg" onClick={() => base44.auth.redirectToLogin()} className="gradient-saffron text-white text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all">
+                  <Sparkles className="mr-2 w-5 h-5" />
+                  Get Started Free
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              )}
+              <Link to={createPageUrl("AILegalPro")}>
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-2 border-purple-600 text-purple-600 hover:bg-purple-50">
+                  <Bot className="mr-2 w-5 h-5" />
+                  Try AI Assistant
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-12 bg-white border-y border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {statsList.map((stat, index) => (
+              <div key={index} className="text-center group cursor-pointer">
+                <div className="flex justify-center mb-3">
+                  <div className={`w-16 h-16 bg-gradient-to-br ${stat.bg} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
+                    <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Main Features */}
+      <section className="py-16 md:py-24 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Complete Legal & Government Platform
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Everything you need for schemes, legal help, and government services
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, index) => (
+              <Link key={index} to={feature.link}>
+                <Card className="h-full hover:shadow-2xl transition-all duration-300 border-2 hover:border-orange-300 group cursor-pointer">
+                  <CardHeader>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg`}>
+                        <feature.icon className="w-7 h-7 text-white" />
+                      </div>
+                      <Badge className="bg-orange-100 text-orange-700">{feature.badge}</Badge>
+                    </div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardDescription className="text-base leading-relaxed">{feature.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-orange-600 font-medium group-hover:gap-2 transition-all">
+                      Explore Now
+                      <ArrowRight className="w-4 h-4 ml-1 group-hover:ml-0 transition-all" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Tools Section */}
+      <section className="py-16 bg-gradient-to-br from-purple-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-purple-100 text-purple-700">🤖 AI-Powered</Badge>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Smart AI Tools</h2>
+            <p className="text-lg text-gray-600">Let AI handle the complexity</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {aiTools.map((tool, index) => (
+              <Link key={index} to={tool.link}>
+                <Card className="hover:shadow-lg transition-all cursor-pointer group text-center h-full">
+                  <CardContent className="p-6">
+                    <tool.icon className={`w-12 h-12 ${tool.color} mx-auto mb-3 group-hover:scale-110 transition-transform`} />
+                    <h3 className="font-semibold text-gray-900 mb-2">{tool.title}</h3>
+                    <p className="text-sm text-gray-600">{tool.desc}</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Services */}
+      <section className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">Quick Access Services</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {quickServices.map((service, index) => (
+              <Link key={index} to={service.link}>
+                <Card className="hover:shadow-lg transition-all cursor-pointer group text-center">
+                  <CardContent className="p-4">
+                    <service.icon className={`w-10 h-10 ${service.color} mx-auto mb-2 group-hover:scale-110 transition-transform`} />
+                    <p className="font-semibold text-sm text-gray-900">{service.title}</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section className="py-16 md:py-20 bg-gradient-to-br from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why 50,000+ Indians Trust Nyay Mitra
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="text-center group">
+                <div className="w-20 h-20 bg-white shadow-xl rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <benefit.icon className={`w-10 h-10 ${benefit.color}`} />
+                </div>
+                <h3 className="font-semibold text-lg text-gray-900 mb-2">{benefit.title}</h3>
+                <p className="text-gray-600">{benefit.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 md:py-20 bg-gradient-to-br from-orange-600 via-orange-500 to-green-600 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" />
+        </div>
+        <div className="relative max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Ready to Get Legal Help?
+          </h2>
+          <p className="text-xl text-orange-100 mb-8">
+            Join 50,000+ Indians getting free legal and government assistance
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {user ? (
+              <Link to={createPageUrl("SchemeFinder")}>
+                <Button size="lg" className="bg-white text-orange-600 hover:bg-orange-50 text-lg px-8 py-6 shadow-xl">
+                  Find Your Schemes
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
+            ) : (
+              <Button size="lg" onClick={() => base44.auth.redirectToLogin()} className="bg-white text-orange-600 hover:bg-orange-50 text-lg px-8 py-6 shadow-xl">
+                Get Started Free
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Disclaimer */}
+      <section className="py-8 bg-gray-100 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+            <div className="flex">
+              <Shield className="w-5 h-5 text-yellow-700 mt-0.5 mr-3 flex-shrink-0" />
+              <div className="text-sm text-yellow-800">
+                <strong className="font-semibold">Important Disclaimer:</strong> Nyay Mitra provides legal and government INFORMATION only, not legal ADVICE. For advice specific to your situation, please consult with a verified lawyer. All information is sourced from official government and legal databases.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
